@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import com.example.myapplication.ui.PantallaLogin
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -41,7 +42,7 @@ fun MyApp() {
     MaterialTheme {
         NavHost(navController = navController, startDestination = "splash") {
             composable("splash") { PantallaCarga(navController) }
-            composable("productos") { PantallaProductos() }
+            composable("login") {PantallaLogin()  }
         }
     }
 }

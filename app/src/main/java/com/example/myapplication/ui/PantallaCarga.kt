@@ -21,7 +21,7 @@ import com.example.myapplication.R
 
 @Composable
 fun PantallaCarga(navController: NavController) {
-    val backgroundColor = Color(0xFFEBE9E1)
+    val backgroundColor = Color(0xFFFFFFFF)
     val view = LocalView.current
     val context = LocalContext.current
     val window = (context as Activity).window
@@ -37,7 +37,7 @@ fun PantallaCarga(navController: NavController) {
 
     LaunchedEffect(Unit) {
         delay(3000)
-        navController.navigate("productos") {
+        navController.navigate("login") {
             popUpTo("splash") { inclusive = true }
         }
     }

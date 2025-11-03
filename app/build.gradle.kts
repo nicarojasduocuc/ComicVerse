@@ -4,13 +4,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.ksp) // Keep this one
-
-    // The following are typically for the root build.gradle, but if needed here, ensure they are not duplicates.
-    // id("com.android.application") version "8.12.3" apply false // Redundant with alias
-    // id("org.jetbrains.kotlin.android") version "2.2.20" apply false // Redundant with alias
+    alias(libs.plugins.ksp)
 }
-
 
 android {
     namespace = "com.example.myapplication"
@@ -42,7 +37,6 @@ android {
 
     kotlinOptions {
         jvmTarget = "11"
-
     }
     buildFeatures {
         compose = true
@@ -65,6 +59,7 @@ dependencies {
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.material:material-icons-extended")
 
     implementation("androidx.navigation:navigation-compose:2.8.3")
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.34.0")

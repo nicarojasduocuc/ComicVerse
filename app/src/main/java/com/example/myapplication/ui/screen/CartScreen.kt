@@ -26,6 +26,7 @@ import coil.request.ImageRequest
 import com.example.myapplication.R
 import com.example.myapplication.db.AppDatabase
 import com.example.myapplication.db.CartItemWithProduct
+import com.example.myapplication.utils.PriceFormatter
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,7 +65,7 @@ fun CartScreen() {
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "$${String.format("%.2f", total)}",
+                                text = PriceFormatter.formatPrice(total),
                                 fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFFF9800)
@@ -96,22 +97,14 @@ fun CartScreen() {
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            Spacer(modifier = Modifier.height(18.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-            ) {
-                Text(
-                    text = "Carrito",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 28.sp,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-            }
+            // Título "Carrito" pegado al status bar
+            Text(
+                text = "Carrito",
+                fontWeight = FontWeight.Bold,
+                fontSize = 28.sp,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
+            )
             
             if (cartItems.isEmpty()) {
                 Box(
@@ -153,7 +146,12 @@ fun CartScreen() {
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 8.dp,
+                        bottom = 16.dp
+                    ),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(cartItems) { item ->
@@ -260,7 +258,7 @@ fun CartItemCard(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "$${String.format("%.2f", item.price)}",
+                        text = PriceFormatter.formatPrice(item.price),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFFF9800)

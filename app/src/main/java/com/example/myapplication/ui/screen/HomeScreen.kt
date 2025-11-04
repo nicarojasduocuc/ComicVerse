@@ -29,6 +29,7 @@ import com.example.myapplication.R
 import com.example.myapplication.db.AppDatabase
 import com.example.myapplication.db.models.CartItem
 import com.example.myapplication.db.models.Product
+import com.example.myapplication.utils.PriceFormatter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -45,41 +46,33 @@ fun HomeScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true },
-                containerColor = Color(0xFFFF9800),
-                contentColor = Color.Black
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar Producto")
-            }
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { paddingValues ->
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.comicverse),
-                    contentDescription = "Logo ComicVerse",
-                    modifier = Modifier.size(150.dp)
-                )
-            }
+            // Título "Inicio" pegado al status bar
+            Text(
+                text = "Inicio",
+                fontWeight = FontWeight.Bold,
+                fontSize = 28.sp,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
+            )
             
+            // Grid de productos
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(12.dp),
+                contentPadding = PaddingValues(
+                    start = 12.dp,
+                    end = 12.dp,
+                    top = 8.dp,
+                    bottom = 12.dp
+                ),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -119,6 +112,26 @@ fun HomeScreen(
                 }
             }
         }
+
+        // FloatingActionButton encima del contenido
+        FloatingActionButton(
+            onClick = { showAddDialog = true },
+            containerColor = Color(0xFFFF9800),
+            contentColor = Color.Black,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Agregar Producto")
+        }
+
+        // SnackbarHost
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 80.dp)
+        )
     }
 
     if (showAddDialog) {
@@ -245,7 +258,7 @@ fun ProductCard(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "$${String.format("%.2f", product.price)}",
+                        text = PriceFormatter.formatPrice(product.price),
                         style = MaterialTheme.typography.titleLarge,
                         color = Color(0xFFFF9800),
                         fontWeight = FontWeight.Bold,
@@ -296,7 +309,8 @@ fun AddProductDialog(
                 OutlinedTextField(
                     value = price,
                     onValueChange = { price = it },
-                    label = { Text("Precio") },
+                    label = { Text("Precio (CLP)") },
+                    placeholder = { Text("15000") },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))

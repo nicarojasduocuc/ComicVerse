@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
+    object Splash : Screen("splash", "Splash", Icons.Default.Home)
     object Home : Screen("home", "Inicio", Icons.Default.Home)
     object Cart : Screen("cart", "Carrito", Icons.Default.ShoppingCart)
     object Account : Screen("account", "Cuenta", Icons.Default.AccountCircle)

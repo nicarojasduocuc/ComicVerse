@@ -7,16 +7,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.myapplication.ui.screens.AccountScreen
-import com.example.myapplication.ui.screens.CartScreen
-import com.example.myapplication.ui.screens.HomeScreen
-import com.example.myapplication.ui.screens.LoginScreen
-import com.example.myapplication.ui.screens.RegisterScreen
+import com.example.myapplication.ui.screens.*
 import com.example.myapplication.utils.UserSession
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,12 +47,15 @@ fun AppNavigation() {
                                         launchSingleTop = true
                                     }
                                 } else {
+                                    // Navegación normal entre pantallas del bottom bar
                                     navController.navigate(screen.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
+                                        // Limpiar back stack hasta Home para evitar ciclos
+                                        popUpTo(Screen.Home.route) {
                                             saveState = true
                                         }
                                         launchSingleTop = true
-                                        restoreState = true
+                                        // Solo restaurar estado si no es Account (para forzar recarga)
+                                        restoreState = screen.route != Screen.Account.route
                                     }
                                 }
                             }
@@ -69,9 +67,18 @@ fun AppNavigation() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Home.route,
+            startDestination = Screen.Splash.route,
             modifier = Modifier.padding(innerPadding)
         ) {
+            composable(Screen.Splash.route) {
+                SplashScreen(
+                    onNavigateToHome = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Splash.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
             composable(Screen.Home.route) {
                 HomeScreen(
                     onNavigateToCart = {
@@ -92,8 +99,8 @@ fun AppNavigation() {
                     AccountScreen(
                         onLogout = {
                             UserSession.logout(context)
-                            navController.navigate(Screen.Login.route) {
-                                popUpTo(Screen.Home.route) { inclusive = false }
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Home.route) { inclusive = true }
                             }
                         }
                     )
@@ -101,7 +108,8 @@ fun AppNavigation() {
                     // Si no está logueado, redirigir a Login
                     LaunchedEffect(Unit) {
                         navController.navigate(Screen.Login.route) {
-                            popUpTo(Screen.Account.route) { inclusive = true }
+                            popUpTo(Screen.Home.route) { inclusive = false }
+                            launchSingleTop = true
                         }
                     }
                 }

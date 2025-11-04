@@ -23,7 +23,6 @@ fun AppNavigation() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
-    // Lista de pantallas que deben mostrar el bottom bar
     val screensWithBottomBar = listOf(
         Screen.Home.route,
         Screen.Cart.route
@@ -62,13 +61,18 @@ fun AppNavigation() {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Home.route) {
-                HomeScreen()
+                HomeScreen(
+                    onNavigateToCart = {  // 👈 Agregar navegación
+                        navController.navigate(Screen.Cart.route) {
+                            popUpTo(Screen.Home.route) { inclusive = false }
+                        }
+                    }
+                )
             }
             composable(Screen.Cart.route) {
                 CartScreen()
             }
             composable(Screen.Account.route) {
-                // Navegar automáticamente a login
                 LaunchedEffect(Unit) {
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Home.route)
@@ -82,6 +86,11 @@ fun AppNavigation() {
                     },
                     onNavigateBack = {
                         navController.popBackStack()
+                    },
+                    onLoginSuccess = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
                     }
                 )
             }

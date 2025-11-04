@@ -41,7 +41,9 @@ fun AppNavigation() {
     val screensWithBottomBar = listOf(
         Screen.Home.route,
         Screen.Cart.route,
-        Screen.Account.route
+        Screen.Account.route,
+        Screen.Login.route,
+        Screen.Register.route 
     )
 
     val showBottomBar = currentDestination?.route in screensWithBottomBar

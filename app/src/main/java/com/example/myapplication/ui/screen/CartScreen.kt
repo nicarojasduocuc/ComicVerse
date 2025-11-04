@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -7,18 +8,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -35,123 +37,115 @@ fun CartScreen() {
     val context = LocalContext.current
     val db = remember { AppDatabase.getDatabase(context) }
     val scope = rememberCoroutineScope()
-    
     val cartItems by db.cartDao().getCartWithProducts(userId = 1)
         .collectAsState(initial = emptyList())
-    
-    val total = cartItems.sumOf { it.price * it.quantity }
+
+    val subtotal = cartItems.sumOf { it.price * it.quantity }
+    val impuestos = if (subtotal > 0) 500.0 else 0.0
+    val total = subtotal + impuestos
+    var expanded by remember { mutableStateOf(true) }
 
     Scaffold(
+        containerColor = Color.White,
         bottomBar = {
             if (cartItems.isNotEmpty()) {
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shadowElevation = 8.dp,
-                    color = MaterialTheme.colorScheme.surface
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(10.dp, RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
+                        .background(Color(0xFFF5F5F5), RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
+                        .padding(horizontal = 20.dp, vertical = 16.dp)
+                        .padding(bottom = 110.dp), // margen extra para el navbar flotante
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Total:",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = PriceFormatter.formatPrice(total),
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFFF9800)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Button(
-                            onClick = {
-                                // TODO: Procesar compra
-                            },
+                    IconButton(onClick = { expanded = !expanded }) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_chevron_icon),
+                            contentDescription = "Expandir / Colapsar",
+                            modifier = Modifier
+                                .size(28.dp)
+                                .rotate(if (expanded) 180f else 0f)
+                        )
+                    }
+
+                    AnimatedVisibility(visible = expanded) {
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(50.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFFF9800),
-                                contentColor = Color.Black
-                            ),
-                            shape = RoundedCornerShape(12.dp)
+                                .padding(bottom = 8.dp)
                         ) {
-                            Text("Proceder al pago", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Subtotal:", fontSize = 16.sp, color = Color.Gray)
+                                Text(PriceFormatter.formatPrice(subtotal), fontSize = 16.sp)
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Impuestos:", fontSize = 16.sp, color = Color.Gray)
+                                Text(PriceFormatter.formatPrice(impuestos), fontSize = 16.sp)
+                            }
+                            Divider(
+                                color = Color.LightGray.copy(alpha = 0.4f),
+                                thickness = 1.dp,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
                         }
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Total:", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            PriceFormatter.formatPrice(total),
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFFF9800)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Button(
+                        onClick = { /* TODO */ },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Black,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(25.dp)
+                    ) {
+                        Text("Procesar Pago", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
         }
-    ) { paddingValues ->
+    ) { padding ->
         Column(
-            modifier = Modifier
+            Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+                .background(Color.White)
+                .padding(padding)
         ) {
-            // Título "Carrito" pegado al status bar
             Text(
-                text = "Carrito",
+                "Carrito",
                 fontWeight = FontWeight.Bold,
-                fontSize = 28.sp,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp)
+                fontSize = 26.sp,
+                color = Color.Black,
+                modifier = Modifier.padding(start = 20.dp, top = 20.dp, bottom = 12.dp)
             )
-            
-            if (cartItems.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ShoppingCart,
-                            contentDescription = "Carrito vacío",
-                            modifier = Modifier.size(120.dp),
-                            tint = Color(0xFFFF9800)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "Tu carrito está vacío",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Agrega productos desde la tienda",
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-            } else {
+
+            if (cartItems.isEmpty()) EmptyCartView() else {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentPadding = PaddingValues(
-                        start = 16.dp,
-                        end = 16.dp,
-                        top = 8.dp,
-                        bottom = 16.dp
-                    ),
+                    contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 160.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(cartItems) { item ->
@@ -159,32 +153,23 @@ fun CartScreen() {
                             item = item,
                             onIncrement = {
                                 scope.launch {
-                                    val cartItem = db.cartDao().getCartItem(1, item.id)
-                                    cartItem?.let {
-                                        db.cartDao().updateCartItem(
-                                            it.copy(quantity = it.quantity + 1)
-                                        )
+                                    db.cartDao().getCartItem(1, item.id)?.let {
+                                        db.cartDao().updateCartItem(it.copy(quantity = it.quantity + 1))
                                     }
                                 }
                             },
                             onDecrement = {
                                 scope.launch {
-                                    val cartItem = db.cartDao().getCartItem(1, item.id)
-                                    cartItem?.let {
-                                        if (it.quantity > 1) {
-                                            db.cartDao().updateCartItem(
-                                                it.copy(quantity = it.quantity - 1)
-                                            )
-                                        } else {
-                                            db.cartDao().deleteCartItem(it)
-                                        }
+                                    db.cartDao().getCartItem(1, item.id)?.let {
+                                        if (it.quantity > 1)
+                                            db.cartDao().updateCartItem(it.copy(quantity = it.quantity - 1))
+                                        else db.cartDao().deleteCartItem(it)
                                     }
                                 }
                             },
                             onDelete = {
                                 scope.launch {
-                                    val cartItem = db.cartDao().getCartItem(1, item.id)
-                                    cartItem?.let {
+                                    db.cartDao().getCartItem(1, item.id)?.let {
                                         db.cartDao().deleteCartItem(it)
                                     }
                                 }
@@ -198,6 +183,24 @@ fun CartScreen() {
 }
 
 @Composable
+fun EmptyCartView() {
+    Box(Modifier.fillMaxSize(), Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(
+                imageVector = Icons.Default.ShoppingCart,
+                contentDescription = "Carrito vacío",
+                modifier = Modifier.size(120.dp),
+                tint = Color(0xFFFF9800)
+            )
+
+            Spacer(Modifier.height(8.dp))
+            Text("Tu carrito está vacío", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text("Agrega productos desde la tienda", color = Color.Gray)
+        }
+    }
+}
+
+@Composable
 fun CartItemCard(
     item: CartItemWithProduct,
     onIncrement: () -> Unit,
@@ -205,110 +208,87 @@ fun CartItemCard(
     onDelete: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        )
+        shape = RoundedCornerShape(12.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            if (item.imageUrl.isNotEmpty()) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(item.imageUrl)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = item.name,
-                    modifier = Modifier
-                        .size(80.dp)
-                        .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .background(Color(0xFFF5F5F5), RoundedCornerShape(8.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Sin imagen", fontSize = 10.sp, color = Color.Gray)
-                }
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(
+        Row(Modifier.padding(12.dp)) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(item.imageUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = item.name,
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(
-                        text = item.name,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 2
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = PriceFormatter.formatPrice(item.price),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFF9800)
-                    )
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
+
+            Spacer(Modifier.width(12.dp))
+
+            Column(Modifier.weight(1f)) {
+                // Título y botón eliminar
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column {
+                        Text(item.name, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        Text(
+                            PriceFormatter.formatPrice(item.price),
+                            color = Color.Black,
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 16.sp
+                        )
+                    }
+                    IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_delete_icon),
+                            contentDescription = "Eliminar"
+                        )
+                    }
                 }
 
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Controles de cantidad
                 Row(
+                    modifier = Modifier
+                        .background(Color(0xFFFFCC80), RoundedCornerShape(10.dp))
+                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                        .width(110.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
+                    horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(
-                            onClick = onDecrement,
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Text(
-                                text = "−",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        Text(
-                            text = "${item.quantity}",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 12.dp)
+                    IconButton(onClick = onDecrement, modifier = Modifier.size(28.dp)) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_minus_icon),
+                            contentDescription = "Disminuir"
                         )
-                        IconButton(
-                            onClick = onIncrement,
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Text(
-                                text = "+",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
                     }
 
-                    IconButton(
-                        onClick = onDelete,
-                        modifier = Modifier.size(32.dp)
+                    Box(
+                        modifier = Modifier
+                            .background(Color.White, RoundedCornerShape(6.dp))
+                            .width(36.dp)
+                            .height(28.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Eliminar",
-                            tint = Color.Red
+                        Text(
+                            "${item.quantity}",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = Color.Black
+                        )
+                    }
+
+                    IconButton(onClick = onIncrement, modifier = Modifier.size(28.dp)) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_plus_icon),
+                            contentDescription = "Aumentar"
                         )
                     }
                 }

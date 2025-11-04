@@ -26,17 +26,18 @@ class MainActivity : ComponentActivity() {
         // Hacer que el contenido se dibuje detrás de la barra de estado
         WindowCompat.setDecorFitsSystemWindows(window, false)
         
-        // Crear usuario por defecto
+        // Crear usuario admin por defecto
         lifecycleScope.launch {
             val db = AppDatabase.getDatabase(applicationContext)
-            val existingUser = db.userDao().getUserByEmail("default@comicverse.com")
+            val existingUser = db.userDao().getUserByEmail("comicverse@gmail.com")
             if (existingUser == null) {
                 db.userDao().insertUser(
                     User(
                         id = 1,
-                        name = "Usuario Invitado",
-                        email = "default@comicverse.com",
-                        password = "guest123"
+                        name = "Administrador",
+                        email = "comicverse@gmail.com",
+                        password = "comicverse",
+                        isAdmin = true
                     )
                 )
             }

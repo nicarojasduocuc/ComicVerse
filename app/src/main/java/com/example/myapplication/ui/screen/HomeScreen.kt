@@ -30,6 +30,7 @@ import com.example.myapplication.db.AppDatabase
 import com.example.myapplication.db.models.CartItem
 import com.example.myapplication.db.models.Product
 import com.example.myapplication.utils.PriceFormatter
+import com.example.myapplication.utils.UserSession
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -43,6 +44,17 @@ fun HomeScreen(
     val products by db.productDao().getAllProducts().collectAsState(initial = emptyList())
     var showAddDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    
+    // Verificar si el usuario es admin
+    var isAdmin by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        val userId = UserSession.getUserId(context)
+        if (userId != -1) {
+            val user = db.userDao().getUserById(userId)
+            isAdmin = user?.isAdmin ?: false
+        }
+    }
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -82,16 +94,17 @@ fun HomeScreen(
                         onAddToCart = {
                             scope.launch {
                                 try {
-                                    val userId = 1
+                                    val userId = UserSession.getUserId(context)
+                                    val currentUserId = if (userId != -1) userId else 1
                                     
-                                    val existingItem = db.cartDao().getCartItem(userId, product.id)
+                                    val existingItem = db.cartDao().getCartItem(currentUserId, product.id)
                                     if (existingItem != null) {
                                         db.cartDao().updateCartItem(
                                             existingItem.copy(quantity = existingItem.quantity + 1)
                                         )
                                     } else {
                                         db.cartDao().insertCartItem(
-                                            CartItem(userId = userId, productId = product.id, quantity = 1)
+                                            CartItem(userId = currentUserId, productId = product.id, quantity = 1)
                                         )
                                     }
                                     
@@ -113,16 +126,18 @@ fun HomeScreen(
             }
         }
 
-        // FloatingActionButton encima del contenido
-        FloatingActionButton(
-            onClick = { showAddDialog = true },
-            containerColor = Color(0xFFFF9800),
-            contentColor = Color.Black,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(16.dp)
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Agregar Producto")
+        // FloatingActionButton solo visible para admin
+        if (isAdmin) {
+            FloatingActionButton(
+                onClick = { showAddDialog = true },
+                containerColor = Color(0xFFFF9800),
+                contentColor = Color.Black,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Agregar Producto")
+            }
         }
 
         // SnackbarHost

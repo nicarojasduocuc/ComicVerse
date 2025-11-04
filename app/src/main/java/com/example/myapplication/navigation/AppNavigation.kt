@@ -49,13 +49,12 @@ fun AppNavigation() {
                                 } else {
                                     // Navegación normal entre pantallas del bottom bar
                                     navController.navigate(screen.route) {
-                                        // Limpiar back stack hasta Home para evitar ciclos
-                                        popUpTo(Screen.Home.route) {
-                                            saveState = true
+                                        // Limpiar back stack hasta el destino seleccionado
+                                        popUpTo(navController.graph.startDestinationId) {
+                                            saveState = false
                                         }
                                         launchSingleTop = true
-                                        // Solo restaurar estado si no es Account (para forzar recarga)
-                                        restoreState = screen.route != Screen.Account.route
+                                        restoreState = false
                                     }
                                 }
                             }
@@ -83,7 +82,7 @@ fun AppNavigation() {
                 HomeScreen(
                     onNavigateToCart = {
                         navController.navigate(Screen.Cart.route) {
-                            popUpTo(Screen.Home.route) { inclusive = false }
+                            launchSingleTop = true
                         }
                     }
                 )
@@ -100,7 +99,7 @@ fun AppNavigation() {
                         onLogout = {
                             UserSession.logout(context)
                             navController.navigate(Screen.Home.route) {
-                                popUpTo(Screen.Home.route) { inclusive = true }
+                                popUpTo(0) { inclusive = true }
                             }
                         }
                     )

@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Database(
     entities = [User::class, Product::class, CartItem::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -34,10 +34,10 @@ abstract class AppDatabase : RoomDatabase() {
                     .addCallback(object : RoomDatabase.Callback() {
                         override fun onCreate(db: SupportSQLiteDatabase) {
                             super.onCreate(db)
-                            // Crear usuario por defecto al crear la BD
+                            // Crear usuario admin por defecto al crear la BD
                             db.execSQL("""
-                                INSERT INTO users (id, name, email, password) 
-                                VALUES (1, 'Usuario Invitado', 'guest@comicverse.com', 'guest123')
+                                INSERT INTO users (id, name, email, password, isAdmin) 
+                                VALUES (1, 'Administrador', 'comicverse@gmail.com', 'comicverse', 1)
                             """)
                         }
                     })
@@ -119,8 +119,6 @@ interface CartDao {
     """)
     fun getCartWithProducts(userId: Int): Flow<List<CartItemWithProduct>>
 }
-
-// The duplicate UserDao interface that was here has been removed.
 
 data class CartItemWithProduct(
     val id: Int,

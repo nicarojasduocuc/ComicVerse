@@ -1,12 +1,21 @@
 package com.example.myapplication.navigation
 
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -33,45 +42,84 @@ fun AppNavigation() {
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (showBottomBar) {
-                NavigationBar {
-                    bottomNavItems.forEach { screen ->
-                        NavigationBarItem(
-                            icon = {
-                                // Si tiene iconRes (personalizado desde drawable), usa painterResource
-                                if (screen.iconRes != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 50.dp, start = 16.dp, end = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(72.dp),
+                        shape = RoundedCornerShape(36.dp),
+                        shadowElevation = 10.dp,
+                        color = Color.White
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            bottomNavItems.forEach { screen ->
+                                val selected = currentDestination
+                                    ?.hierarchy
+                                    ?.any { it.route == screen.route } == true
+
+                                val interactionSource = remember { MutableInteractionSource() }
+
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(666.dp))
+                                        .clickable(
+                                            interactionSource = interactionSource,
+                                            indication = ripple(
+                                                bounded = true,
+                                                radius = 666.dp,
+                                                color = Color(0x33FF9800) // 🔸 hover naranja translúcido
+                                            )
+                                        ) {
+                                            val goToLogin = screen.route == Screen.Account.route &&
+                                                    !UserSession.isLoggedIn(context)
+                                            val destination =
+                                                if (goToLogin) Screen.Login.route else screen.route
+
+                                            navController.navigate(destination) {
+                                                popUpTo(navController.graph.startDestinationId) {
+                                                    saveState = false
+                                                }
+                                                launchSingleTop = true
+                                                restoreState = false
+                                            }
+                                        },
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
                                     Icon(
-                                        painter = painterResource(id = screen.iconRes),
-                                        contentDescription = screen.title
+                                        painter = painterResource(id = screen.iconRes!!),
+                                        contentDescription = screen.title,
+                                        tint = if (selected) Color(0xFFFF9800) else Color.Black,
+                                        modifier = Modifier.size(26.dp)
                                     )
-                                } 
-                                // Si tiene icon (Material Icons), usa Icon con ImageVector
-                                else if (screen.icon != null) {
-                                    Icon(
-                                        imageVector = screen.icon,
-                                        contentDescription = screen.title
+
+                                    Spacer(modifier = Modifier.height(1.dp))
+
+                                    Text(
+                                        text = screen.title,
+                                        color = Color.Gray,
+                                        fontSize = 12.sp,
+                                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                                        maxLines = 1
                                     )
-                                }
-                            },  // <--- AQUÍ ESTABA FALTANDO LA COMA
-                            label = { Text(screen.title) },
-                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
-                            onClick = {
-                                if (screen.route == Screen.Account.route && !UserSession.isLoggedIn(context)) {
-                                    navController.navigate(Screen.Login.route) {
-                                        launchSingleTop = true
-                                    }
-                                } else {
-                                    navController.navigate(screen.route) {
-                                        popUpTo(navController.graph.startDestinationId) {
-                                            saveState = false
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = false
-                                    }
                                 }
                             }
-                        )
+                        }
                     }
                 }
             }
@@ -100,13 +148,10 @@ fun AppNavigation() {
                     }
                 )
             }
-            composable(Screen.Cart.route) {
-                CartScreen()
-            }
+            composable(Screen.Cart.route) { CartScreen() }
+
             composable(Screen.Account.route) {
-                val isLoggedIn = UserSession.isLoggedIn(context)
-                
-                if (isLoggedIn) {
+                if (UserSession.isLoggedIn(context)) {
                     AccountScreen(
                         onLogout = {
                             UserSession.logout(context)
@@ -124,6 +169,7 @@ fun AppNavigation() {
                     }
                 }
             }
+
             composable(Screen.Login.route) {
                 LoginScreen(
                     onNavigateToRegister = {
@@ -141,6 +187,7 @@ fun AppNavigation() {
                     }
                 )
             }
+
             composable(Screen.Register.route) {
                 RegisterScreen(
                     onNavigateBack = {

@@ -3,7 +3,6 @@ package com.example.myapplication.ui.screens
 import android.app.Activity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -27,7 +26,6 @@ fun SplashScreen(
     val view = LocalView.current
     val context = LocalContext.current
     val window = (context as Activity).window
-    val useDarkIcons = !isSystemInDarkTheme()
     val backgroundColor = MaterialTheme.colorScheme.background
 
     SideEffect {
@@ -35,8 +33,8 @@ fun SplashScreen(
         window.navigationBarColor = backgroundColor.toArgb()
 
         val controller = WindowInsetsControllerCompat(window, view)
-        controller.isAppearanceLightStatusBars = useDarkIcons
-        controller.isAppearanceLightNavigationBars = useDarkIcons
+        controller.isAppearanceLightStatusBars = true  // SIEMPRE íconos oscuros
+        controller.isAppearanceLightNavigationBars = true  // SIEMPRE íconos oscuros
     }
 
     LaunchedEffect(Unit) {

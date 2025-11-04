@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Database(
     entities = [User::class, Product::class, CartItem::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -112,7 +112,7 @@ interface CartDao {
     suspend fun clearCart(userId: Int)
 
     @Query("""
-        SELECT p.id, p.name, p.price, p.description, p.imageUrl, c.quantity 
+        SELECT p.id, p.name, p.price, p.description, p.imageUrl, p.year, p.type, p.stock, p.salePrice, c.quantity 
         FROM products p
         INNER JOIN cart_items c ON p.id = c.productId
         WHERE c.userId = :userId
@@ -126,5 +126,9 @@ data class CartItemWithProduct(
     val price: Double,
     val description: String,
     val imageUrl: String,
+    val year: Int,
+    val type: String,
+    val stock: Int,
+    val salePrice: Double?,
     val quantity: Int
 )

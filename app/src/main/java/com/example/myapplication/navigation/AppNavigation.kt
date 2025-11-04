@@ -6,6 +6,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -37,19 +38,31 @@ fun AppNavigation() {
                 NavigationBar {
                     bottomNavItems.forEach { screen ->
                         NavigationBarItem(
-                            icon = { Icon(screen.icon, contentDescription = screen.title) },
+                            icon = {
+                                // Si tiene iconRes (personalizado desde drawable), usa painterResource
+                                if (screen.iconRes != null) {
+                                    Icon(
+                                        painter = painterResource(id = screen.iconRes),
+                                        contentDescription = screen.title
+                                    )
+                                } 
+                                // Si tiene icon (Material Icons), usa Icon con ImageVector
+                                else if (screen.icon != null) {
+                                    Icon(
+                                        imageVector = screen.icon,
+                                        contentDescription = screen.title
+                                    )
+                                }
+                            },  // <--- AQUÍ ESTABA FALTANDO LA COMA
                             label = { Text(screen.title) },
                             selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                             onClick = {
-                                // Si se hace clic en "Cuenta" y no hay sesión, ir a Login
                                 if (screen.route == Screen.Account.route && !UserSession.isLoggedIn(context)) {
                                     navController.navigate(Screen.Login.route) {
                                         launchSingleTop = true
                                     }
                                 } else {
-                                    // Navegación normal entre pantallas del bottom bar
                                     navController.navigate(screen.route) {
-                                        // Limpiar back stack hasta el destino seleccionado
                                         popUpTo(navController.graph.startDestinationId) {
                                             saveState = false
                                         }
@@ -91,7 +104,6 @@ fun AppNavigation() {
                 CartScreen()
             }
             composable(Screen.Account.route) {
-                // Verificar si el usuario está logueado
                 val isLoggedIn = UserSession.isLoggedIn(context)
                 
                 if (isLoggedIn) {
@@ -104,7 +116,6 @@ fun AppNavigation() {
                         }
                     )
                 } else {
-                    // Si no está logueado, redirigir a Login
                     LaunchedEffect(Unit) {
                         navController.navigate(Screen.Login.route) {
                             popUpTo(Screen.Home.route) { inclusive = false }

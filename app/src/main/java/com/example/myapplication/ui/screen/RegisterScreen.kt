@@ -27,7 +27,7 @@ import com.example.myapplication.R
 import com.example.myapplication.db.AppDatabase
 import com.example.myapplication.db.models.User
 import kotlinx.coroutines.launch
-
+import com.example.myapplication.utils.UserSession
 @Composable
 fun RegisterScreen(
     onNavigateBack: () -> Unit
@@ -136,7 +136,8 @@ fun RegisterScreen(
                             isLoading = false
                         } else {
                             val user = User(name = name, email = email, password = password)
-                            db.userDao().insertUser(user)
+                            val userId = db.userDao().insertUser(user)
+                            UserSession.saveUserId(context, userId.toInt())
                             isLoading = false
                             onNavigateBack()
                         }

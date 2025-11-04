@@ -1,5 +1,6 @@
 package com.example.myapplication.navigation
 
+
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
@@ -11,6 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.myapplication.ui.screens.AccountScreen
 import com.example.myapplication.ui.screens.CartScreen
 import com.example.myapplication.ui.screens.HomeScreen
 import com.example.myapplication.ui.screens.LoginScreen
@@ -25,7 +27,8 @@ fun AppNavigation() {
 
     val screensWithBottomBar = listOf(
         Screen.Home.route,
-        Screen.Cart.route
+        Screen.Cart.route,
+        Screen.Account.route
     )
 
     val showBottomBar = currentDestination?.route in screensWithBottomBar
@@ -62,7 +65,7 @@ fun AppNavigation() {
         ) {
             composable(Screen.Home.route) {
                 HomeScreen(
-                    onNavigateToCart = {  // 👈 Agregar navegación
+                    onNavigateToCart = {
                         navController.navigate(Screen.Cart.route) {
                             popUpTo(Screen.Home.route) { inclusive = false }
                         }
@@ -73,11 +76,13 @@ fun AppNavigation() {
                 CartScreen()
             }
             composable(Screen.Account.route) {
-                LaunchedEffect(Unit) {
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(Screen.Home.route)
+                AccountScreen(
+                    onLogout = {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
                     }
-                }
+                )
             }
             composable(Screen.Login.route) {
                 LoginScreen(

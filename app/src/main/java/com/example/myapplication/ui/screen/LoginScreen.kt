@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.sp
 import com.example.myapplication.R
 import com.example.myapplication.db.AppDatabase
 import kotlinx.coroutines.launch
+import com.example.myapplication.utils.UserSession
+
 
 @Composable
 fun LoginScreen(
@@ -117,6 +119,7 @@ fun LoginScreen(
                         val user = db.userDao().login(email, password)
                         isLoading = false
                         if (user != null) {
+                            UserSession.saveUserId(context, user.id)
                             onLoginSuccess()
                         } else {
                             errorMessage = "Email o contraseña incorrectos"

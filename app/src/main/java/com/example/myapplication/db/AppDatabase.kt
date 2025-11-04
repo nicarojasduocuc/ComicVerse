@@ -10,11 +10,11 @@ import kotlinx.coroutines.flow.Flow
 
 @Database(
     entities = [User::class, Product::class, CartItem::class],
-    version = 3,  // 👈 Cambiar versión a 3
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
-    
+
     abstract fun userDao(): UserDao
     abstract fun productDao(): ProductDao
     abstract fun cartDao(): CartDao
@@ -60,6 +60,9 @@ interface UserDao {
 
     @Query("SELECT * FROM users WHERE email = :email LIMIT 1")
     suspend fun getUserByEmail(email: String): User?
+
+    @Query("SELECT * FROM users WHERE id = :userId LIMIT 1")
+    suspend fun getUserById(userId: Int): User?
 
     @Query("SELECT * FROM users")
     fun getAllUsers(): Flow<List<User>>
@@ -116,6 +119,8 @@ interface CartDao {
     """)
     fun getCartWithProducts(userId: Int): Flow<List<CartItemWithProduct>>
 }
+
+// The duplicate UserDao interface that was here has been removed.
 
 data class CartItemWithProduct(
     val id: Int,

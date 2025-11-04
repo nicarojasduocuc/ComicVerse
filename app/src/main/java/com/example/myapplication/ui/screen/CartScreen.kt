@@ -26,7 +26,6 @@ import coil.request.ImageRequest
 import com.example.myapplication.R
 import com.example.myapplication.db.AppDatabase
 import com.example.myapplication.db.CartItemWithProduct
-import com.example.myapplication.db.models.CartItem
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,37 +35,12 @@ fun CartScreen() {
     val db = remember { AppDatabase.getDatabase(context) }
     val scope = rememberCoroutineScope()
     
-    // Obtener items del carrito (userId = 1 por ahora)
     val cartItems by db.cartDao().getCartWithProducts(userId = 1)
         .collectAsState(initial = emptyList())
     
-    // Calcular total
     val total = cartItems.sumOf { it.price * it.quantity }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.comicverse),
-                            contentDescription = "Logo ComicVerse",
-                            modifier = Modifier.size(40.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Carrito", fontWeight = FontWeight.Bold)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFFF9800),
-                    titleContentColor = Color.Black
-                )
-            )
-        },
         bottomBar = {
             if (cartItems.isNotEmpty()) {
                 Surface(
@@ -117,89 +91,108 @@ fun CartScreen() {
             }
         }
     ) { paddingValues ->
-        if (cartItems.isEmpty()) {
-            // Carrito vacío
-            Box(
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            Spacer(modifier = Modifier.height(18.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .background(MaterialTheme.colorScheme.background),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ShoppingCart,
-                        contentDescription = "Carrito vacío",
-                        modifier = Modifier.size(120.dp),
-                        tint = Color(0xFFFF9800)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Tu carrito está vacío",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Agrega productos desde la tienda",
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
-                    )
-                }
+                Text(
+                    text = "Carrito",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 28.sp,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
             }
-        } else {
-            // Lista de productos en el carrito
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .background(MaterialTheme.colorScheme.background),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(cartItems) { item ->
-                    CartItemCard(
-                        item = item,
-                        onIncrement = {
-                            scope.launch {
-                                val cartItem = db.cartDao().getCartItem(1, item.id)
-                                cartItem?.let {
-                                    db.cartDao().updateCartItem(
-                                        it.copy(quantity = it.quantity + 1)
-                                    )
-                                }
-                            }
-                        },
-                        onDecrement = {
-                            scope.launch {
-                                val cartItem = db.cartDao().getCartItem(1, item.id)
-                                cartItem?.let {
-                                    if (it.quantity > 1) {
+            
+            if (cartItems.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ShoppingCart,
+                            contentDescription = "Carrito vacío",
+                            modifier = Modifier.size(120.dp),
+                            tint = Color(0xFFFF9800)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Tu carrito está vacío",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Agrega productos desde la tienda",
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(cartItems) { item ->
+                        CartItemCard(
+                            item = item,
+                            onIncrement = {
+                                scope.launch {
+                                    val cartItem = db.cartDao().getCartItem(1, item.id)
+                                    cartItem?.let {
                                         db.cartDao().updateCartItem(
-                                            it.copy(quantity = it.quantity - 1)
+                                            it.copy(quantity = it.quantity + 1)
                                         )
-                                    } else {
+                                    }
+                                }
+                            },
+                            onDecrement = {
+                                scope.launch {
+                                    val cartItem = db.cartDao().getCartItem(1, item.id)
+                                    cartItem?.let {
+                                        if (it.quantity > 1) {
+                                            db.cartDao().updateCartItem(
+                                                it.copy(quantity = it.quantity - 1)
+                                            )
+                                        } else {
+                                            db.cartDao().deleteCartItem(it)
+                                        }
+                                    }
+                                }
+                            },
+                            onDelete = {
+                                scope.launch {
+                                    val cartItem = db.cartDao().getCartItem(1, item.id)
+                                    cartItem?.let {
                                         db.cartDao().deleteCartItem(it)
                                     }
                                 }
                             }
-                        },
-                        onDelete = {
-                            scope.launch {
-                                val cartItem = db.cartDao().getCartItem(1, item.id)
-                                cartItem?.let {
-                                    db.cartDao().deleteCartItem(it)
-                                }
-                            }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -227,7 +220,6 @@ fun CartItemCard(
                 .padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Imagen del producto
             if (item.imageUrl.isNotEmpty()) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
@@ -253,7 +245,6 @@ fun CartItemCard(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Información del producto
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -281,7 +272,6 @@ fun CartItemCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    // Controles de cantidad
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -313,7 +303,6 @@ fun CartItemCard(
                         }
                     }
 
-                    // Botón eliminar
                     IconButton(
                         onClick = onDelete,
                         modifier = Modifier.size(32.dp)

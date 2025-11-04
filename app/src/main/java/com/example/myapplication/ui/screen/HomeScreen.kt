@@ -46,29 +46,6 @@ fun HomeScreen(
     val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.comicverse),
-                            contentDescription = "Logo ComicVerse",
-                            modifier = Modifier.size(40.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("ComicVerse", fontWeight = FontWeight.Bold)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFFF9800),
-                    titleContentColor = Color.Black
-                )
-            )
-        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddDialog = true },
@@ -80,53 +57,66 @@ fun HomeScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { paddingValues ->
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .background(MaterialTheme.colorScheme.background),
-            contentPadding = PaddingValues(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .background(MaterialTheme.colorScheme.background)
         ) {
-            items(products) { product ->
-                ProductCard(
-                    product = product,
-                    onAddToCart = {
-                        scope.launch {
-                            try {
-                                val userId = 1
-                                
-                                val existingItem = db.cartDao().getCartItem(userId, product.id)
-                                if (existingItem != null) {
-                                    db.cartDao().updateCartItem(
-                                        existingItem.copy(quantity = existingItem.quantity + 1)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.comicverse),
+                    contentDescription = "Logo ComicVerse",
+                    modifier = Modifier.size(150.dp)
+                )
+            }
+            
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(products) { product ->
+                    ProductCard(
+                        product = product,
+                        onAddToCart = {
+                            scope.launch {
+                                try {
+                                    val userId = 1
+                                    
+                                    val existingItem = db.cartDao().getCartItem(userId, product.id)
+                                    if (existingItem != null) {
+                                        db.cartDao().updateCartItem(
+                                            existingItem.copy(quantity = existingItem.quantity + 1)
+                                        )
+                                    } else {
+                                        db.cartDao().insertCartItem(
+                                            CartItem(userId = userId, productId = product.id, quantity = 1)
+                                        )
+                                    }
+                                    
+                                    snackbarHostState.showSnackbar(
+                                        message = "✓ Agregado al carrito",
+                                        duration = SnackbarDuration.Short
                                     )
-                                } else {
-                                    db.cartDao().insertCartItem(
-                                        CartItem(userId = userId, productId = product.id, quantity = 1)
-                                    )
+                                    
+                                    delay(300)
+                                    onNavigateToCart()
+                                    
+                                } catch (e: Exception) {
+                                    snackbarHostState.showSnackbar("Error: ${e.message}")
                                 }
-                                
-                                // Mostrar mensaje breve
-                                snackbarHostState.showSnackbar(
-                                    message = "✓ Agregado al carrito",
-                                    duration = SnackbarDuration.Short
-                                )
-                                
-                                // Pequeño delay para que el usuario vea el mensaje
-                                delay(300)
-                                
-                                // Navegar al carrito
-                                onNavigateToCart()
-                                
-                            } catch (e: Exception) {
-                                snackbarHostState.showSnackbar("Error: ${e.message}")
                             }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
     }

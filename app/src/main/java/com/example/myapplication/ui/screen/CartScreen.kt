@@ -44,9 +44,17 @@ fun CartScreen() {
     val impuestos = if (subtotal > 0) 500.0 else 0.0
     val total = subtotal + impuestos
     var expanded by remember { mutableStateOf(true) }
+    
+    val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
         containerColor = Color.White,
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier.padding(bottom = 200.dp)
+            )
+        },
         bottomBar = {
             if (cartItems.isNotEmpty()) {
                 Column(
@@ -145,7 +153,7 @@ fun CartScreen() {
 
             if (cartItems.isEmpty()) EmptyCartView() else {
                 LazyColumn(
-                    contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 160.dp),
+                    contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 15.dp, bottom = 160.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(cartItems) { item ->
@@ -153,8 +161,18 @@ fun CartScreen() {
                             item = item,
                             onIncrement = {
                                 scope.launch {
-                                    db.cartDao().getCartItem(1, item.id)?.let {
-                                        db.cartDao().updateCartItem(it.copy(quantity = it.quantity + 1))
+                                    db.cartDao().getCartItem(1, item.id)?.let { cartItem ->
+                                        // Verificar que no exceda el stock disponible
+                                        if (cartItem.quantity >= item.stock) {
+                                            snackbarHostState.showSnackbar(
+                                                message = "Stock máximo alcanzado (${item.stock} unidades)",
+                                                duration = SnackbarDuration.Short
+                                            )
+                                        } else {
+                                            db.cartDao().updateCartItem(
+                                                cartItem.copy(quantity = cartItem.quantity + 1)
+                                            )
+                                        }
                                     }
                                 }
                             },
@@ -210,10 +228,10 @@ fun CartItemCard(
     Card(
         Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(12.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        shape = RoundedCornerShape(0.dp)
     ) {
-        Row(Modifier.padding(12.dp)) {
+        Row {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(item.imageUrl)
@@ -221,27 +239,47 @@ fun CartItemCard(
                     .build(),
                 contentDescription = item.name,
                 modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(8.dp)),
+                    .width(100.dp)
+                    .height(150.dp),
                 contentScale = ContentScale.Crop
             )
 
             Spacer(Modifier.width(12.dp))
 
-            Column(Modifier.weight(1f)) {
+            Column(
+                Modifier
+                    .weight(1f)
+                    .height(150.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
                 // Título y botón eliminar
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Top
                 ) {
-                    Column {
-                        Text(item.name, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            item.name,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp,
+                            maxLines = 2,
+                            lineHeight = 24.sp
+                        )
+                        if (item.type.isNotEmpty()) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                item.type,
+                                fontSize = 13.sp,
+                                color = Color.Gray
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
                         Text(
                             PriceFormatter.formatPrice(item.price),
                             color = Color.Black,
                             fontWeight = FontWeight.Medium,
-                            fontSize = 16.sp
+                            fontSize = 18.sp
                         )
                     }
                     IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
@@ -251,8 +289,6 @@ fun CartItemCard(
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(10.dp))
 
                 // Controles de cantidad
                 Row(
@@ -285,10 +321,15 @@ fun CartItemCard(
                         )
                     }
 
-                    IconButton(onClick = onIncrement, modifier = Modifier.size(28.dp)) {
+                    IconButton(
+                        onClick = onIncrement, 
+                        modifier = Modifier.size(28.dp),
+                        enabled = item.quantity < item.stock
+                    ) {
                         Image(
                             painter = painterResource(id = R.drawable.ic_plus_icon),
-                            contentDescription = "Aumentar"
+                            contentDescription = "Aumentar",
+                            alpha = if (item.quantity < item.stock) 1f else 0.3f
                         )
                     }
                 }

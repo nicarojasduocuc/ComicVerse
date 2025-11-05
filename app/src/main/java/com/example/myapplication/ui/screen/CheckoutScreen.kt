@@ -561,7 +561,7 @@ fun CheckoutScreen(
                         },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("MM/AA") },
-                        leadingIcon = {
+                        leadingIcon ={
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_date_icon),
                                 contentDescription = null,

@@ -44,8 +44,6 @@ fun AppNavigation() {
         Screen.Home.route,
         Screen.Cart.route,
         Screen.Account.route,
-        Screen.Login.route,
-        Screen.Register.route,
         "detail/{productId}"
     )
 

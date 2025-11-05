@@ -2,6 +2,7 @@ package com.example.myapplication.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -28,7 +29,8 @@ import com.example.myapplication.utils.PriceFormatter
 
 @Composable
 fun HomeScreen(
-    onNavigateToCart: () -> Unit = {} // ✅ mantiene compatibilidad con AppNavigation
+    onNavigateToCart: () -> Unit = {},
+    onProductClick: (Int) -> Unit = {}
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.getDatabase(context) }
@@ -88,25 +90,34 @@ fun HomeScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             items(products) { product ->
-                ProductCard(product, whiteBackground)
+                ProductCard(
+                    product = product,
+                    backgroundColor = whiteBackground,
+                    onClick = { onProductClick(product.id) }
+                )
             }
         }
     }
 }
 
 @Composable
-fun ProductCard(product: Product, backgroundColor: Color = Color.White) {
+fun ProductCard(
+    product: Product,
+    backgroundColor: Color = Color.White,
+    onClick: () -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .wrapContentHeight()
+            .clickable(onClick = onClick)
     ) {
         // 🔸 Imagen tipo póster sin bordes
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(213.dp)
-                .background(backgroundColor) // ✅ igual que el fondo principal
+                .background(backgroundColor)
         ) {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
@@ -114,7 +125,7 @@ fun ProductCard(product: Product, backgroundColor: Color = Color.White) {
                     .crossfade(true)
                     .build(),
                 contentDescription = product.name,
-                contentScale = ContentScale.Fit, // ✅ muestra imagen completa sin recorte
+                contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize()
             )
 

@@ -23,10 +23,12 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.myapplication.ui.screens.*
 import com.example.myapplication.utils.UserSession
 
@@ -43,10 +45,18 @@ fun AppNavigation() {
         Screen.Cart.route,
         Screen.Account.route,
         Screen.Login.route,
-        Screen.Register.route 
+        Screen.Register.route,
+        "detail/{productId}" // ✅ Agregar la ruta de detalle
     )
 
-    val showBottomBar = currentDestination?.route in screensWithBottomBar
+    // ✅ Verificar si la ruta actual contiene "detail/"
+    val showBottomBar = screensWithBottomBar.any { route ->
+        if (route.contains("{")) {
+            currentDestination?.route?.startsWith(route.substringBefore("{")) == true
+        } else {
+            currentDestination?.route == route
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
@@ -67,15 +77,33 @@ fun AppNavigation() {
                         }
                     )
                 }
+                
                 composable(Screen.Home.route) {
                     HomeScreen(
                         onNavigateToCart = {
                             navController.navigate(Screen.Cart.route) {
                                 launchSingleTop = true
                             }
+                        },
+                        onProductClick = { productId ->
+                            navController.navigate("detail/$productId")
                         }
                     )
                 }
+                
+                composable(
+                    route = "detail/{productId}",
+                    arguments = listOf(
+                        navArgument("productId") { type = NavType.IntType }
+                    )
+                ) { backStackEntry ->
+                    val productId = backStackEntry.arguments?.getInt("productId") ?: 0
+                    DetailScreen(
+                        productId = productId,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+                
                 composable(Screen.Cart.route) { CartScreen() }
 
                 composable(Screen.Account.route) {
@@ -149,9 +177,8 @@ fun FloatingNavBar(navController: NavHostController, currentDestination: NavDest
                 .width(0.9f.percentOfScreen())
                 .height(70.dp)
                 .graphicsLayer {
-                    // ✅ Sombra flotante más real
                     shadowElevation = 35f
-                    translationY = -4f // levanta un poco visualmente
+                    translationY = -4f
                     shape = RoundedCornerShape(40.dp)
                     clip = true
                 }

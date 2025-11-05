@@ -1,5 +1,8 @@
 package com.example.myapplication.ui.screens
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -8,19 +11,28 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -55,12 +67,16 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Estados de filtros
+    // Estados de filtros y búsqueda
     var showFilterDialog by remember { mutableStateOf(false) }
     var sortOption by remember { mutableStateOf(SortOption.NONE) }
     var priceRange by remember { mutableStateOf(0f..50000f) }
     var selectedTypes by remember { mutableStateOf<Set<String>>(emptySet()) }
     var showOnlyFavorites by remember { mutableStateOf(false) }
+    
+    // ✅ Estados de búsqueda
+    var searchQuery by remember { mutableStateOf("") }
+    var isSearchActive by remember { mutableStateOf(false) }
 
     // Verificar si el usuario actual es admin
     val userId = UserSession.getUserId(context)
@@ -82,9 +98,27 @@ fun HomeScreen(
         }
     }
 
-    // Aplicar filtros
-    val filteredProducts = remember(allProducts, sortOption, priceRange, selectedTypes, showOnlyFavorites, favoriteProducts) {
+    // ✅ Aplicar filtros + búsqueda
+    val filteredProducts = remember(
+        allProducts, 
+        sortOption, 
+        priceRange, 
+        selectedTypes, 
+        showOnlyFavorites, 
+        favoriteProducts,
+        searchQuery
+    ) {
         var filtered = allProducts
+
+        // ✅ Filtrar por búsqueda
+        if (searchQuery.isNotBlank()) {
+            val query = searchQuery.lowercase().trim()
+            filtered = filtered.filter { product ->
+                product.name.lowercase().contains(query) ||
+                product.type.lowercase().contains(query) ||
+                product.description.lowercase().contains(query)
+            }
+        }
 
         // Filtrar por tipos seleccionados
         if (selectedTypes.isNotEmpty()) {
@@ -124,59 +158,189 @@ fun HomeScreen(
                 .background(whiteBackground)
                 .padding(horizontal = 20.dp)
         ) {
-            // 🔹 Header con logo y botones
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 24.dp, bottom = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // 🖼️ Logo ComicVerse
-                Image(
-                    painter = painterResource(id = R.drawable.comicverse),
-                    contentDescription = "ComicVerse Logo",
-                    modifier = Modifier
-                        .width(150.dp)
-                        .height(40.dp),
-                    contentScale = ContentScale.Fit
-                )
-
-                // 🔘 Botones
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Botón de filtro
-                    IconButton(onClick = { showFilterDialog = true }) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_filter_icon),
-                            contentDescription = "Filtrar",
-                            modifier = Modifier.size(26.dp)
+            // ✅ Header con animación suave de izquierda/derecha
+            AnimatedContent(
+                targetState = isSearchActive,
+                transitionSpec = {
+                    if (targetState) {
+                        // Abriendo búsqueda: entra desde la derecha
+                        slideInHorizontally(
+                            initialOffsetX = { fullWidth -> fullWidth },
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessLow
+                            )
+                        ) + fadeIn(
+                            animationSpec = spring(stiffness = Spring.StiffnessLow)
+                        ) togetherWith 
+                        slideOutHorizontally(
+                            targetOffsetX = { fullWidth -> -fullWidth },
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessLow
+                            )
+                        ) + fadeOut(
+                            animationSpec = spring(stiffness = Spring.StiffnessLow)
+                        )
+                    } else {
+                        // Cerrando búsqueda: sale hacia la derecha
+                        slideInHorizontally(
+                            initialOffsetX = { fullWidth -> -fullWidth },
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessLow
+                            )
+                        ) + fadeIn(
+                            animationSpec = spring(stiffness = Spring.StiffnessLow)
+                        ) togetherWith 
+                        slideOutHorizontally(
+                            targetOffsetX = { fullWidth -> fullWidth },
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessLow
+                            )
+                        ) + fadeOut(
+                            animationSpec = spring(stiffness = Spring.StiffnessLow)
                         )
                     }
-                    // Botón de búsqueda (placeholder)
-                    IconButton(onClick = { /* TODO: abrir buscador */ }) {
+                },
+                label = "search_animation"
+            ) { isActive ->
+                if (isActive) {
+                    SearchBar(
+                        query = searchQuery,
+                        onQueryChange = { searchQuery = it },
+                        onClose = { 
+                            isSearchActive = false
+                            searchQuery = ""
+                        }
+                    )
+                } else {
+                    // 🔹 Header normal con logo y botones
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 24.dp, bottom = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // 🖼️ Logo ComicVerse
                         Image(
-                            painter = painterResource(id = R.drawable.ic_search_icon),
-                            contentDescription = "Buscar",
-                            modifier = Modifier.size(26.dp)
+                            painter = painterResource(id = R.drawable.comicverse),
+                            contentDescription = "ComicVerse Logo",
+                            modifier = Modifier
+                                .width(150.dp)
+                                .height(40.dp),
+                            contentScale = ContentScale.Fit
+                        )
+
+                        // 🔘 Botones
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            // Botón de filtro
+                            IconButton(onClick = { showFilterDialog = true }) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_filter_icon),
+                                    contentDescription = "Filtrar",
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                            // ✅ Botón de búsqueda
+                            IconButton(onClick = { isSearchActive = true }) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.ic_search_icon),
+                                    contentDescription = "Buscar",
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // ✅ Mostrar contador de resultados si hay búsqueda activa
+            AnimatedVisibility(
+                visible = searchQuery.isNotBlank(),
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${filteredProducts.size} resultado(s) para \"$searchQuery\"",
+                        fontSize = 14.sp,
+                        color = Color.Gray,
+                        fontWeight = FontWeight.Medium
+                    )
+                    TextButton(
+                        onClick = { searchQuery = "" }
+                    ) {
+                        Text(
+                            "Limpiar",
+                            color = Color(0xFFFF9800),
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
             }
 
             // 🔹 Grid de productos
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(bottom = 120.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(filteredProducts) { product ->
-                    ProductCard(
-                        product = product,
-                        backgroundColor = whiteBackground,
-                        onClick = { onProductClick(product.id) }
-                    )
+            if (filteredProducts.isEmpty()) {
+                // ✅ Mensaje cuando no hay resultados
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Sin resultados",
+                            modifier = Modifier.size(80.dp),
+                            tint = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = if (searchQuery.isNotBlank()) {
+                                "No se encontraron productos"
+                            } else {
+                                "No hay productos disponibles"
+                            },
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        )
+                        if (searchQuery.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Intenta con otros términos de búsqueda",
+                                fontSize = 14.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    contentPadding = PaddingValues(bottom = 120.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(filteredProducts) { product ->
+                        ProductCard(
+                            product = product,
+                            backgroundColor = whiteBackground,
+                            onClick = { onProductClick(product.id) }
+                        )
+                    }
                 }
             }
         }
@@ -245,6 +409,96 @@ fun HomeScreen(
                     }
                 }
             )
+        }
+    }
+}
+
+// ✅ Componente de búsqueda mejorado con una sola X
+@Composable
+fun SearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onClose: () -> Unit
+) {
+    val focusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+        keyboardController?.show()
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 24.dp, bottom = 16.dp),
+        shape = RoundedCornerShape(28.dp),
+        color = Color(0xFFF5F5F5),
+        shadowElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = "Buscar",
+                tint = Color.Gray,
+                modifier = Modifier.size(24.dp)
+            )
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
+            TextField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRequester(focusRequester),
+                placeholder = { 
+                    Text(
+                        "Buscar productos...",
+                        color = Color.Gray,
+                        fontSize = 16.sp
+                    )
+                },
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    cursorColor = Color(0xFFFF9800)
+                ),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    imeAction = ImeAction.Search
+                ),
+                keyboardActions = KeyboardActions(
+                    onSearch = {
+                        keyboardController?.hide()
+                    }
+                )
+            )
+            
+            // ✅ Un solo botón X para limpiar y cerrar
+            IconButton(
+                onClick = {
+                    if (query.isNotEmpty()) {
+                        onQueryChange("")
+                    } else {
+                        onClose()
+                    }
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = if (query.isNotEmpty()) "Limpiar" else "Cerrar búsqueda",
+                    tint = Color.Black,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
     }
 }

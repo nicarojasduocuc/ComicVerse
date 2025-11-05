@@ -1,6 +1,5 @@
 package com.example.myapplication.ui.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -12,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -63,136 +63,139 @@ fun DetailScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.White)
                     .padding(padding)
             ) {
-                // 🖼️ Imagen de fondo difuminada
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(prod.imageUrl)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(500.dp)
-                        .align(Alignment.TopCenter)
-                )
-
-                // 🌫️ Gradiente superior (blanco → transparente)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.White.copy(alpha = 0.95f),
-                                    Color.Transparent
-                                )
-                            )
-                        )
-                        .align(Alignment.TopCenter)
-                        .zIndex(2f)
-                )
-
-                // 🌫️ Gradiente inferior (transparente → blanco)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(250.dp)
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(
-                                    Color.Transparent,
-                                    Color.White
-                                )
-                            )
-                        )
-                        .align(Alignment.TopCenter)
-                        .offset(y = 250.dp)
-                        .zIndex(2f)
-                )
-
-                // 📖 Contenido scrolleable
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(top = 80.dp)
+                        .padding(bottom = 100.dp)
                 ) {
-                    // 🔙 Header: Volver + Favorito
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp)
-                            .zIndex(10f),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .clickable { onNavigateBack() }
-                                .padding(8.dp)
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_back_icon),
-                                contentDescription = "Volver",
-                                modifier = Modifier.size(20.dp),
-                                tint = Color.Black
-                            )
-                            Spacer(Modifier.width(4.dp))
-                            Text(
-                                text = "Volver",
-                                fontSize = 16.sp,
-                                color = Color.Black,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-
-                        IconButton(onClick = { /* TODO: Agregar a favoritos */ }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_heart_icon),
-                                contentDescription = "Favorito",
-                                modifier = Modifier.size(28.dp),
-                                tint = Color.Black
-                            )
-                        }
-                    }
-
-                    Spacer(Modifier.height(24.dp))
-
-                    // 📘 Imagen principal del producto (centrada)
+                    // 📷 Sección superior con imagen de fondo y poster
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(380.dp),
-                        contentAlignment = Alignment.Center
+                            .height(500.dp)
                     ) {
-                        Surface(
+                        // Imagen de fondo con opacidad 40%
+                        AsyncImage(
+                            model = ImageRequest.Builder(context)
+                                .data(prod.imageUrl)
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
                             modifier = Modifier
-                                .width(240.dp)
-                                .height(360.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            shadowElevation = 20.dp,
-                            color = Color.White
-                        ) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(context)
-                                    .data(prod.imageUrl)
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = prod.name,
-                                contentScale = ContentScale.Fit,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
-                    }
+                                .fillMaxSize()
+                                .alpha(0.4f)
+                                .zIndex(1f)
+                        )
 
-                    Spacer(Modifier.height(32.dp))
+                        // Gradiente superior (blanco → transparente)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp)
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(
+                                            Color.White,
+                                            Color.Transparent
+                                        )
+                                    )
+                                )
+                                .align(Alignment.TopCenter)
+                                .zIndex(2f)
+                        )
+
+                        // Header (Volver + Corazón) - más pegado al status bar
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp, vertical = 8.dp)
+                                .zIndex(10f),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .clickable { onNavigateBack() }
+                                    .padding(8.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_back_icon),
+                                    contentDescription = "Volver",
+                                    modifier = Modifier.size(22.dp),
+                                    tint = Color.Black
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = "Volver",
+                                    fontSize = 17.sp,
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+
+                            IconButton(
+                                onClick = { /* TODO: Favoritos */ },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_heart_icon),
+                                    contentDescription = "Favorito",
+                                    modifier = Modifier.size(28.dp),
+                                    tint = Color.Black
+                                )
+                            }
+                        }
+
+                        // Poster centrado
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .zIndex(3f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Surface(
+                                modifier = Modifier
+                                    .width(220.dp)
+                                    .height(330.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                shadowElevation = 16.dp,
+                                color = Color.White
+                            ) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data(prod.imageUrl)
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = prod.name,
+                                    contentScale = ContentScale.Fit,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                        }
+
+                        // Gradiente inferior (transparente → blanco)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp)
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(
+                                            Color.Transparent,
+                                            Color.White
+                                        )
+                                    )
+                                )
+                                .align(Alignment.BottomCenter)
+                                .zIndex(2f)
+                        )
+                    }
 
                     // 📝 Información del producto
                     Column(
@@ -201,27 +204,30 @@ fun DetailScreen(
                             .background(Color.White)
                             .padding(horizontal = 24.dp)
                     ) {
+                        Spacer(Modifier.height(16.dp))
+
                         // Categoría y Año
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = "Categoría: ",
-                                    fontSize = 13.sp,
+                                    fontSize = 14.sp,
                                     color = Color.Gray
                                 )
                                 Text(
                                     text = prod.type,
-                                    fontSize = 13.sp,
+                                    fontSize = 14.sp,
                                     color = Color(0xFFFF9800),
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                             Text(
                                 text = "Año: ${prod.year}",
-                                fontSize = 13.sp,
+                                fontSize = 14.sp,
                                 color = Color.Gray
                             )
                         }
@@ -231,24 +237,24 @@ fun DetailScreen(
                         // Nombre del producto
                         Text(
                             text = prod.name,
-                            fontSize = 24.sp,
+                            fontSize = 26.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.Black,
-                            lineHeight = 28.sp
+                            lineHeight = 30.sp
                         )
 
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(12.dp))
 
                         // Stock disponible
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier
-                                    .size(8.dp)
+                                    .size(10.dp)
                                     .clip(CircleShape)
                                     .background(
-                                        if (prod.stock > 10) Color.Green
-                                        else if (prod.stock > 0) Color(0xFFFFB300)
-                                        else Color.Red
+                                        if (prod.stock > 10) Color(0xFF4CAF50)
+                                        else if (prod.stock > 0) Color(0xFFFF9800)
+                                        else Color(0xFFF44336)
                                     )
                             )
                             Spacer(Modifier.width(8.dp))
@@ -265,7 +271,7 @@ fun DetailScreen(
                         // Descripción
                         Text(
                             text = "Descripción:",
-                            fontSize = 16.sp,
+                            fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.Black
                         )
@@ -274,90 +280,39 @@ fun DetailScreen(
 
                         Text(
                             text = prod.description,
-                            fontSize = 14.sp,
+                            fontSize = 15.sp,
                             color = Color.DarkGray,
-                            lineHeight = 20.sp
+                            lineHeight = 22.sp
                         )
 
-                        Spacer(Modifier.height(150.dp))
-                    }
-                }
+                        Spacer(Modifier.height(32.dp))
 
-                // ⬇️ Bottom bar fija con precio y botón
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 80.dp),
-                    color = Color.White,
-                    shadowElevation = 12.dp
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp, vertical = 16.dp)
-                    ) {
-                        // Precio
+                        // Controles de cantidad y botón (NO FIXED, parte del scroll)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                if (prod.salePrice != null && prod.salePrice!! < prod.price) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            text = PriceFormatter.formatPrice(prod.salePrice!!),
-                                            fontSize = 28.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.Black
-                                        )
-                                        Spacer(Modifier.width(8.dp))
-                                        Text(
-                                            text = PriceFormatter.formatPrice(prod.price),
-                                            fontSize = 16.sp,
-                                            color = Color.Gray,
-                                            textDecoration = TextDecoration.LineThrough
-                                        )
-                                    }
-                                } else {
-                                    Text(
-                                        text = PriceFormatter.formatPrice(prod.price),
-                                        fontSize = 28.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.Black
-                                    )
-                                }
-                            }
-                        }
-
-                        Spacer(Modifier.height(16.dp))
-
-                        // Controles de cantidad y botón
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             // Controles de cantidad
                             Surface(
                                 shape = RoundedCornerShape(50),
                                 color = Color(0xFFFFF3E0),
-                                modifier = Modifier.height(50.dp)
+                                modifier = Modifier.height(52.dp)
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp),
+                                    modifier = Modifier.padding(horizontal = 16.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                                 ) {
                                     IconButton(
                                         onClick = { if (quantity > 1) quantity-- },
-                                        modifier = Modifier.size(36.dp)
+                                        modifier = Modifier.size(32.dp)
                                     ) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.ic_minus_icon),
                                             contentDescription = "Disminuir",
-                                            tint = Color(0xFFFF9800)
+                                            tint = Color(0xFFFF9800),
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     }
 
@@ -370,13 +325,14 @@ fun DetailScreen(
 
                                     IconButton(
                                         onClick = { if (quantity < prod.stock) quantity++ },
-                                        modifier = Modifier.size(36.dp),
+                                        modifier = Modifier.size(32.dp),
                                         enabled = quantity < prod.stock
                                     ) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.ic_plus_icon),
                                             contentDescription = "Aumentar",
-                                            tint = if (quantity < prod.stock) Color(0xFFFF9800) else Color.Gray
+                                            tint = if (quantity < prod.stock) Color(0xFFFF9800) else Color.Gray,
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     }
                                 }
@@ -420,8 +376,7 @@ fun DetailScreen(
                                 },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(50.dp)
-                                    .padding(start = 12.dp),
+                                    .height(52.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = Color.Black,
                                     contentColor = Color.White
@@ -430,11 +385,13 @@ fun DetailScreen(
                             ) {
                                 Text(
                                     text = "Agregar Al Carrito",
-                                    fontSize = 15.sp,
+                                    fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
                         }
+
+                        Spacer(Modifier.height(24.dp))
                     }
                 }
             }

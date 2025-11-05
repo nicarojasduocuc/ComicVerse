@@ -52,7 +52,7 @@ fun LoginScreen(
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
-        // Botón de retroceso con ic_back_icon
+        // Botón de retroceso
         IconButton(
             onClick = onNavigateBack,
             modifier = Modifier
@@ -108,7 +108,6 @@ fun LoginScreen(
                     .padding(start = 6.dp, bottom = 8.dp)
             )
 
-            // Input con ic_mail_icon con color gris (mismo que el candado)
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -150,7 +149,6 @@ fun LoginScreen(
                     .padding(start = 6.dp, bottom = 8.dp)
             )
 
-            // Input con icono de candado
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -192,14 +190,13 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(36.dp))
 
-            // --- Botón Acceder con fondo gris e icono gris cuando disabled ---
+            // ✅ Botón Acceder - NARANJA durante loading
             Button(
                 onClick = {
                     scope.launch {
                         isLoading = true
                         errorMessage = ""
                         
-                        // Timeout de 1.5 segundos
                         delay(1500)
                         
                         val user = db.userDao().login(email, password)
@@ -218,12 +215,13 @@ fun LoginScreen(
                     .height(56.dp),
                 shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFF9800),
+                    containerColor = Color(0xFFFF9800), // Naranja normal
                     contentColor = Color.Black,
                     disabledContainerColor = Color(0xFFE0E0E0), // Gris cuando disabled
-                    disabledContentColor = Color(0xFF9E9E9E)    // Texto gris cuando disabled
+                    disabledContentColor = Color(0xFF9E9E9E)
                 ),
-                enabled = email.isNotBlank() && password.isNotBlank() && !isLoading
+                // ✅ Solo disabled cuando los campos están vacíos (NO durante loading)
+                enabled = email.isNotBlank() && password.isNotBlank()
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
@@ -243,7 +241,7 @@ fun LoginScreen(
                                 if (email.isNotBlank() && password.isNotBlank()) 
                                     Color.Black 
                                 else 
-                                    Color(0xFF9E9E9E) // Icono gris cuando disabled
+                                    Color(0xFF9E9E9E)
                             ),
                             modifier = Modifier.size(22.dp)
                         )

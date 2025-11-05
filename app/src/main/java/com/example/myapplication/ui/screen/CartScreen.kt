@@ -33,7 +33,9 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CartScreen() {
+fun CartScreen(
+    onNavigateToCheckout: () -> Unit = {} // ✅ Parámetro para navegar a Checkout
+) {
     val context = LocalContext.current
     val db = remember { AppDatabase.getDatabase(context) }
     val scope = rememberCoroutineScope()
@@ -63,7 +65,7 @@ fun CartScreen() {
                         .shadow(10.dp, RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
                         .background(Color(0xFFF5F5F5), RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp))
                         .padding(horizontal = 20.dp, vertical = 16.dp)
-                        .padding(bottom = 110.dp), // margen extra para el navbar flotante
+                        .padding(bottom = 110.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     IconButton(onClick = { expanded = !expanded }) {
@@ -120,8 +122,9 @@ fun CartScreen() {
 
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    // ✅ Botón que navega a Checkout
                     Button(
-                        onClick = { /* TODO */ },
+                        onClick = onNavigateToCheckout,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
@@ -162,7 +165,6 @@ fun CartScreen() {
                             onIncrement = {
                                 scope.launch {
                                     db.cartDao().getCartItem(1, item.id)?.let { cartItem ->
-                                        // Verificar que no exceda el stock disponible
                                         if (cartItem.quantity >= item.stock) {
                                             snackbarHostState.showSnackbar(
                                                 message = "Stock máximo alcanzado (${item.stock} unidades)",
@@ -290,47 +292,52 @@ fun CartItemCard(
                     }
                 }
 
-                // Controles de cantidad
-                Row(
+                // Controles de cantidad mejorados
+                Surface(
+                    shape = RoundedCornerShape(50),
+                    color = Color(0xFFFFF3E0),
                     modifier = Modifier
-                        .background(Color(0xFFFFCC80), RoundedCornerShape(10.dp))
-                        .padding(horizontal = 6.dp, vertical = 4.dp)
-                        .width(110.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                        .height(44.dp)
+                        .width(140.dp)
                 ) {
-                    IconButton(onClick = onDecrement, modifier = Modifier.size(28.dp)) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_minus_icon),
-                            contentDescription = "Disminuir"
-                        )
-                    }
-
-                    Box(
+                    Row(
                         modifier = Modifier
-                            .background(Color.White, RoundedCornerShape(6.dp))
-                            .width(36.dp)
-                            .height(28.dp),
-                        contentAlignment = Alignment.Center
+                            .fillMaxSize()
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
+                        IconButton(
+                            onClick = onDecrement,
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_minus_icon),
+                                contentDescription = "Disminuir",
+                                tint = Color(0xFFFF9800),
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+
                         Text(
-                            "${item.quantity}",
+                            text = "${item.quantity}",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
+                            fontSize = 18.sp,
                             color = Color.Black
                         )
-                    }
 
-                    IconButton(
-                        onClick = onIncrement, 
-                        modifier = Modifier.size(28.dp),
-                        enabled = item.quantity < item.stock
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_plus_icon),
-                            contentDescription = "Aumentar",
-                            alpha = if (item.quantity < item.stock) 1f else 0.3f
-                        )
+                        IconButton(
+                            onClick = onIncrement,
+                            modifier = Modifier.size(28.dp),
+                            enabled = item.quantity < item.stock
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_plus_icon),
+                                contentDescription = "Aumentar",
+                                tint = if (item.quantity < item.stock) Color(0xFFFF9800) else Color.Gray,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
             }

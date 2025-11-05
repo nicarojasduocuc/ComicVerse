@@ -34,6 +34,16 @@ import com.example.myapplication.utils.PriceFormatter
 import com.example.myapplication.utils.UserSession
 import kotlinx.coroutines.launch
 
+enum class SortOption {
+    PRICE_LOW_TO_HIGH,
+    PRICE_HIGH_TO_LOW,
+    NAME_A_TO_Z,
+    NAME_Z_TO_A,
+    YEAR_NEW_TO_OLD,
+    YEAR_OLD_TO_NEW,
+    NONE
+}
+
 @Composable
 fun HomeScreen(
     onNavigateToCart: () -> Unit = {},
@@ -41,19 +51,67 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.getDatabase(context) }
-    val products by db.productDao().getAllProducts().collectAsState(initial = emptyList())
+    val allProducts by db.productDao().getAllProducts().collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // Estados de filtros
+    var showFilterDialog by remember { mutableStateOf(false) }
+    var sortOption by remember { mutableStateOf(SortOption.NONE) }
+    var priceRange by remember { mutableStateOf(0f..50000f) }
+    var selectedTypes by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var showOnlyFavorites by remember { mutableStateOf(false) }
+
     // Verificar si el usuario actual es admin
     val userId = UserSession.getUserId(context)
+    val isLoggedIn = UserSession.isLoggedIn(context)
     var isAdmin by remember { mutableStateOf(false) }
     var showAddDialog by remember { mutableStateOf(false) }
+
+    // Obtener favoritos si está logueado
+    val favoriteProducts by if (isLoggedIn && userId > 0) {
+        db.favoriteDao().getFavoritesByUser(userId).collectAsState(initial = emptyList())
+    } else {
+        remember { mutableStateOf(emptyList()) }
+    }
 
     LaunchedEffect(userId) {
         if (userId != -1) {
             val user = db.userDao().getUserById(userId)
             isAdmin = user?.isAdmin == true
+        }
+    }
+
+    // Aplicar filtros
+    val filteredProducts = remember(allProducts, sortOption, priceRange, selectedTypes, showOnlyFavorites, favoriteProducts) {
+        var filtered = allProducts
+
+        // Filtrar por tipos seleccionados
+        if (selectedTypes.isNotEmpty()) {
+            filtered = filtered.filter { it.type in selectedTypes }
+        }
+
+        // Filtrar por rango de precio
+        filtered = filtered.filter { 
+            val price = it.salePrice ?: it.price
+            price in priceRange.start.toDouble()..priceRange.endInclusive.toDouble()
+        }
+
+        // Filtrar por favoritos
+        if (showOnlyFavorites && isLoggedIn) {
+            val favoriteIds = favoriteProducts.map { it.productId }.toSet()
+            filtered = filtered.filter { it.id in favoriteIds }
+        }
+
+        // Ordenar según la opción seleccionada
+        when (sortOption) {
+            SortOption.PRICE_LOW_TO_HIGH -> filtered.sortedBy { it.salePrice ?: it.price }
+            SortOption.PRICE_HIGH_TO_LOW -> filtered.sortedByDescending { it.salePrice ?: it.price }
+            SortOption.NAME_A_TO_Z -> filtered.sortedBy { it.name }
+            SortOption.NAME_Z_TO_A -> filtered.sortedByDescending { it.name }
+            SortOption.YEAR_NEW_TO_OLD -> filtered.sortedByDescending { it.year }
+            SortOption.YEAR_OLD_TO_NEW -> filtered.sortedBy { it.year }
+            SortOption.NONE -> filtered
         }
     }
 
@@ -84,15 +142,17 @@ fun HomeScreen(
                     contentScale = ContentScale.Fit
                 )
 
-                // 🔘 Botones con espacio más reducido
+                // 🔘 Botones
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    IconButton(onClick = onNavigateToCart) {
+                    // Botón de filtro
+                    IconButton(onClick = { showFilterDialog = true }) {
                         Image(
                             painter = painterResource(id = R.drawable.ic_filter_icon),
                             contentDescription = "Filtrar",
                             modifier = Modifier.size(26.dp)
                         )
                     }
+                    // Botón de búsqueda (placeholder)
                     IconButton(onClick = { /* TODO: abrir buscador */ }) {
                         Image(
                             painter = painterResource(id = R.drawable.ic_search_icon),
@@ -106,12 +166,12 @@ fun HomeScreen(
             // 🔹 Grid de productos
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
-                contentPadding = PaddingValues(bottom = 120.dp), // ✅ Aumentado de 80dp a 120dp
+                contentPadding = PaddingValues(bottom = 120.dp),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
-                items(products) { product ->
+                items(filteredProducts) { product ->
                     ProductCard(
                         product = product,
                         backgroundColor = whiteBackground,
@@ -129,7 +189,7 @@ fun HomeScreen(
                 contentColor = Color.Black,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(bottom = 120.dp, end = 16.dp) // ✅ Aumentado de 100dp a 120dp
+                    .padding(bottom = 120.dp, end = 16.dp)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Agregar Producto")
             }
@@ -140,8 +200,34 @@ fun HomeScreen(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 120.dp) // ✅ Aumentado de 100dp a 120dp
+                .padding(bottom = 120.dp)
         )
+
+        // Diálogo de filtros
+        if (showFilterDialog) {
+            FilterDialog(
+                currentSortOption = sortOption,
+                currentPriceRange = priceRange,
+                currentSelectedTypes = selectedTypes,
+                currentShowOnlyFavorites = showOnlyFavorites,
+                isLoggedIn = isLoggedIn,
+                allProducts = allProducts,
+                onDismiss = { showFilterDialog = false },
+                onApplyFilters = { newSort, newPriceRange, newTypes, newShowFavorites ->
+                    sortOption = newSort
+                    priceRange = newPriceRange
+                    selectedTypes = newTypes
+                    showOnlyFavorites = newShowFavorites
+                    showFilterDialog = false
+                },
+                onClearFilters = {
+                    sortOption = SortOption.NONE
+                    priceRange = 0f..50000f
+                    selectedTypes = emptySet()
+                    showOnlyFavorites = false
+                }
+            )
+        }
 
         // Diálogo para agregar producto
         if (showAddDialog) {
@@ -160,6 +246,245 @@ fun HomeScreen(
                 }
             )
         }
+    }
+}
+
+@Composable
+fun FilterDialog(
+    currentSortOption: SortOption,
+    currentPriceRange: ClosedFloatingPointRange<Float>,
+    currentSelectedTypes: Set<String>,
+    currentShowOnlyFavorites: Boolean,
+    isLoggedIn: Boolean,
+    allProducts: List<Product>,
+    onDismiss: () -> Unit,
+    onApplyFilters: (SortOption, ClosedFloatingPointRange<Float>, Set<String>, Boolean) -> Unit,
+    onClearFilters: () -> Unit
+) {
+    var sortOption by remember { mutableStateOf(currentSortOption) }
+    var priceRange by remember { mutableStateOf(currentPriceRange) }
+    var selectedTypes by remember { mutableStateOf(currentSelectedTypes) }
+    var showOnlyFavorites by remember { mutableStateOf(currentShowOnlyFavorites) }
+
+    // Obtener tipos únicos de productos
+    val availableTypes = remember(allProducts) {
+        allProducts.map { it.type }.distinct().sorted()
+    }
+
+    // Calcular rango de precios de productos
+    val minPrice = remember(allProducts) {
+        allProducts.minOfOrNull { it.salePrice ?: it.price }?.toFloat() ?: 0f
+    }
+    val maxPrice = remember(allProducts) {
+        allProducts.maxOfOrNull { it.salePrice ?: it.price }?.toFloat() ?: 50000f
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { 
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Filtros", fontWeight = FontWeight.Bold, fontSize = 22.sp)
+                TextButton(onClick = {
+                    onClearFilters()
+                    sortOption = SortOption.NONE
+                    priceRange = minPrice..maxPrice
+                    selectedTypes = emptySet()
+                    showOnlyFavorites = false
+                }) {
+                    Text("Limpiar", color = Color(0xFFFF9800), fontWeight = FontWeight.Bold)
+                }
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .verticalScroll(rememberScrollState())
+                    .fillMaxWidth()
+            ) {
+                // Ordenar por
+                Text(
+                    "Ordenar por",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    SortOptionItem("Precio: Menor a Mayor", sortOption == SortOption.PRICE_LOW_TO_HIGH) {
+                        sortOption = SortOption.PRICE_LOW_TO_HIGH
+                    }
+                    SortOptionItem("Precio: Mayor a Menor", sortOption == SortOption.PRICE_HIGH_TO_LOW) {
+                        sortOption = SortOption.PRICE_HIGH_TO_LOW
+                    }
+                    SortOptionItem("Nombre: A - Z", sortOption == SortOption.NAME_A_TO_Z) {
+                        sortOption = SortOption.NAME_A_TO_Z
+                    }
+                    SortOptionItem("Nombre: Z - A", sortOption == SortOption.NAME_Z_TO_A) {
+                        sortOption = SortOption.NAME_Z_TO_A
+                    }
+                    SortOptionItem("Año: Más reciente", sortOption == SortOption.YEAR_NEW_TO_OLD) {
+                        sortOption = SortOption.YEAR_NEW_TO_OLD
+                    }
+                    SortOptionItem("Año: Más antiguo", sortOption == SortOption.YEAR_OLD_TO_NEW) {
+                        sortOption = SortOption.YEAR_OLD_TO_NEW
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Divider(color = Color.LightGray)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Rango de precio
+                Text(
+                    "Rango de precio",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                Text(
+                    "${PriceFormatter.formatPrice(priceRange.start.toDouble())} - ${PriceFormatter.formatPrice(priceRange.endInclusive.toDouble())}",
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                RangeSlider(
+                    value = priceRange,
+                    onValueChange = { priceRange = it },
+                    valueRange = minPrice..maxPrice,
+                    steps = 20,
+                    colors = SliderDefaults.colors(
+                        thumbColor = Color(0xFFFF9800),
+                        activeTrackColor = Color(0xFFFF9800),
+                        inactiveTrackColor = Color.LightGray
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Divider(color = Color.LightGray)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Filtrar por tipo
+                Text(
+                    "Tipo de producto",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                availableTypes.forEach { type ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                selectedTypes = if (type in selectedTypes) {
+                                    selectedTypes - type
+                                } else {
+                                    selectedTypes + type
+                                }
+                            }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = type in selectedTypes,
+                            onCheckedChange = {
+                                selectedTypes = if (it) selectedTypes + type else selectedTypes - type
+                            },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = Color(0xFFFF9800),
+                                uncheckedColor = Color.Gray
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(type, fontSize = 14.sp)
+                    }
+                }
+
+                // Mostrar solo favoritos (si está logueado)
+                if (isLoggedIn) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Divider(color = Color.LightGray)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showOnlyFavorites = !showOnlyFavorites }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = showOnlyFavorites,
+                            onCheckedChange = { showOnlyFavorites = it },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = Color(0xFFFF9800),
+                                uncheckedColor = Color.Gray
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Mostrar solo favoritos", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onApplyFilters(sortOption, priceRange, selectedTypes, showOnlyFavorites)
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFF9800),
+                    contentColor = Color.Black
+                )
+            ) {
+                Text("Aplicar", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
+}
+
+@Composable
+fun SortOptionItem(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .background(
+                if (isSelected) Color(0xFFFFF3E0) else Color.Transparent,
+                shape = MaterialTheme.shapes.small
+            )
+            .padding(vertical = 12.dp, horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(
+            selected = isSelected,
+            onClick = onClick,
+            colors = RadioButtonDefaults.colors(
+                selectedColor = Color(0xFFFF9800),
+                unselectedColor = Color.Gray
+            )
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = text,
+            fontSize = 14.sp,
+            color = if (isSelected) Color.Black else Color.DarkGray
+        )
     }
 }
 
@@ -269,7 +594,6 @@ fun AddProductDialog(
     var description by remember { mutableStateOf("") }
     var imageUrl by remember { mutableStateOf("") }
 
-    // Lista de tipos disponibles
     val productTypes = listOf(
         "Manga",
         "Comic",
@@ -301,7 +625,6 @@ fun AddProductDialog(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // ✅ Dropdown para tipo de producto
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = !expanded },

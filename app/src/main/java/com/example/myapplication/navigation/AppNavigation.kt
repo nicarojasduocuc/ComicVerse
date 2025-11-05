@@ -46,10 +46,9 @@ fun AppNavigation() {
         Screen.Account.route,
         Screen.Login.route,
         Screen.Register.route,
-        "detail/{productId}" // ✅ Agregar la ruta de detalle
+        "detail/{productId}"
     )
 
-    // ✅ Verificar si la ruta actual contiene "detail/"
     val showBottomBar = screensWithBottomBar.any { route ->
         if (route.contains("{")) {
             currentDestination?.route?.startsWith(route.substringBefore("{")) == true
@@ -109,7 +108,31 @@ fun AppNavigation() {
                     )
                 }
                 
-                composable(Screen.Cart.route) { CartScreen() }
+                // ✅ AQUÍ ESTÁ LA CORRECCIÓN - Asegúrate de pasar onNavigateToCheckout
+                composable(Screen.Cart.route) { 
+                    CartScreen(
+                        onNavigateToCheckout = {
+                            navController.navigate(Screen.Checkout.route) {
+                                launchSingleTop = true
+                            }
+                        }
+                    )
+                }
+
+                // ✅ Ruta de Checkout
+                composable(Screen.Checkout.route) {
+                    CheckoutScreen(
+                        onNavigateBack = { 
+                            navController.popBackStack() 
+                        },
+                        onNavigateToCart = {
+                            navController.navigate(Screen.Cart.route) {
+                                popUpTo(Screen.Checkout.route) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    )
+                }
 
                 composable(Screen.Account.route) {
                     if (UserSession.isLoggedIn(context)) {

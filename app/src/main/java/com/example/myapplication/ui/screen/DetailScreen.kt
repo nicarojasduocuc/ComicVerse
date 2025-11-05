@@ -50,11 +50,7 @@ fun DetailScreen(
     var quantity by remember { mutableStateOf(1) }
     val isLoggedIn = UserSession.isLoggedIn(context)
     val loggedUserId = UserSession.getUserId(context)
-    
-    // Para el carrito siempre usar userId = 1 (invitado) si no está logueado
     val cartUserId = if (isLoggedIn) loggedUserId else 1
-    
-    // Para favoritos solo verificar si está logueado
     val isFavorite by if (isLoggedIn && loggedUserId > 0) {
         db.favoriteDao().isFavorite(loggedUserId, productId)
             .collectAsState(initial = false)
@@ -87,13 +83,11 @@ fun DetailScreen(
                         .verticalScroll(rememberScrollState())
                         .padding(bottom = 100.dp)
                 ) {
-                    // 📷 Sección superior con imagen de fondo y poster
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(450.dp)
                     ) {
-                        // Imagen de fondo con opacidad 40%
                         AsyncImage(
                             model = ImageRequest.Builder(context)
                                 .data(prod.imageUrl)
@@ -106,8 +100,6 @@ fun DetailScreen(
                                 .alpha(0.4f)
                                 .zIndex(1f)
                         )
-
-                        // Gradiente superior (blanco → transparente)
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -123,8 +115,6 @@ fun DetailScreen(
                                 .align(Alignment.TopCenter)
                                 .zIndex(2f)
                         )
-
-                        // Header (Volver + Corazón)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -154,19 +144,14 @@ fun DetailScreen(
                                     fontWeight = FontWeight.SemiBold
                                 )
                             }
-
-                            // Botón de favorito (solo funciona si está logueado)
                             IconButton(
                                 onClick = {
                                     if (!isLoggedIn) {
-                                        // Si no está logueado, redirigir a login
                                         onNavigateToLogin()
                                     } else {
-                                        // Si está logueado, agregar/quitar de favoritos
                                         scope.launch {
                                             val existingFavorite = db.favoriteDao()
                                                 .getFavorite(loggedUserId, productId)
-                                            
                                             if (existingFavorite != null) {
                                                 db.favoriteDao().deleteFavorite(existingFavorite)
                                                 snackbarHostState.showSnackbar(
@@ -192,9 +177,9 @@ fun DetailScreen(
                             ) {
                                 Icon(
                                     painter = painterResource(
-                                        id = if (isFavorite) 
-                                            R.drawable.ic_heart_selected_icon 
-                                        else 
+                                        id = if (isFavorite)
+                                            R.drawable.ic_heart_selected_icon
+                                        else
                                             R.drawable.ic_heart_icon
                                     ),
                                     contentDescription = "Favorito",
@@ -203,8 +188,6 @@ fun DetailScreen(
                                 )
                             }
                         }
-
-                        // Poster centrado sin border radius
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -230,8 +213,6 @@ fun DetailScreen(
                                 )
                             }
                         }
-
-                        // Gradiente inferior (transparente → blanco)
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -248,8 +229,6 @@ fun DetailScreen(
                                 .zIndex(2f)
                         )
                     }
-
-                    // 📝 Información del producto
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -257,8 +236,6 @@ fun DetailScreen(
                             .padding(horizontal = 24.dp)
                     ) {
                         Spacer(Modifier.height(16.dp))
-
-                        // Categoría y Año
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -283,10 +260,7 @@ fun DetailScreen(
                                 color = Color.Gray
                             )
                         }
-
                         Spacer(Modifier.height(12.dp))
-
-                        // Nombre del producto
                         Text(
                             text = prod.name,
                             fontSize = 26.sp,
@@ -294,10 +268,7 @@ fun DetailScreen(
                             color = Color.Black,
                             lineHeight = 30.sp
                         )
-
                         Spacer(Modifier.height(12.dp))
-
-                        // Stock disponible
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Box(
                                 modifier = Modifier
@@ -317,35 +288,26 @@ fun DetailScreen(
                                 fontWeight = FontWeight.Medium
                             )
                         }
-
                         Spacer(Modifier.height(20.dp))
-
-                        // Descripción
                         Text(
                             text = "Descripción:",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.Black
                         )
-
                         Spacer(Modifier.height(8.dp))
-
                         Text(
                             text = prod.description,
                             fontSize = 15.sp,
                             color = Color.DarkGray,
                             lineHeight = 22.sp
                         )
-
                         Spacer(Modifier.height(32.dp))
-
-                        // Controles de cantidad y botón
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Controles de cantidad
                             Surface(
                                 shape = RoundedCornerShape(50),
                                 color = Color(0xFFFFF3E0),
@@ -367,14 +329,12 @@ fun DetailScreen(
                                             modifier = Modifier.size(20.dp)
                                         )
                                     }
-
                                     Text(
                                         text = "$quantity",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 20.sp,
                                         color = Color.Black
                                     )
-
                                     IconButton(
                                         onClick = { if (quantity < prod.stock) quantity++ },
                                         modifier = Modifier.size(32.dp),
@@ -389,8 +349,6 @@ fun DetailScreen(
                                     }
                                 }
                             }
-
-                            // Botón agregar al carrito (funciona sin login usando userId = 1)
                             Button(
                                 onClick = {
                                     scope.launch {
@@ -449,7 +407,6 @@ fun DetailScreen(
                                 )
                             }
                         }
-
                         Spacer(Modifier.height(24.dp))
                     }
                 }

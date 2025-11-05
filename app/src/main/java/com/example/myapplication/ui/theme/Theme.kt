@@ -26,18 +26,18 @@ private val LightColorScheme = lightColorScheme(
     primary = Purple40,
     secondary = PurpleGrey40,
     tertiary = Pink40,
-    background = Color.White, // ✅ Color de fondo blanco consistente
+    background = Color.White,
     surface = Color.White,
     surfaceVariant = Color(0xFFF5F5F5)
 )
 
 @Composable
 fun MyApplicationTheme(
-    darkTheme: Boolean = false, // FORZAR SIEMPRE TEMA CLARO
-    dynamicColor: Boolean = false, // DESHABILITAR COLORES DINÁMICOS
+    darkTheme: Boolean = false,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    // SIEMPRE usar el esquema de colores claro
+
     val colorScheme = LightColorScheme
     
     val view = LocalView.current

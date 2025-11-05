@@ -50,7 +50,7 @@ fun AccountScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White) // ✅ Color blanco directo
+            .background(Color.White)
     ) {
         Column(
             modifier = Modifier
@@ -61,7 +61,6 @@ fun AccountScreen(
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Logo o Avatar
             Box(
                 modifier = Modifier
                     .size(120.dp)
@@ -79,7 +78,6 @@ fun AccountScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Nombre del usuario
             Text(
                 text = currentUser?.name ?: "Cargando...",
                 fontSize = 28.sp,
@@ -97,7 +95,6 @@ fun AccountScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Card con información del usuario
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -118,7 +115,6 @@ fun AccountScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Nombre completo
                     InfoRow(
                         icon = Icons.Default.Person,
                         label = "Nombre Completo",
@@ -129,7 +125,6 @@ fun AccountScreen(
                     Divider(color = Color.LightGray)
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Email
                     InfoRow(
                         icon = Icons.Default.Email,
                         label = "Correo Electrónico",
@@ -169,7 +164,6 @@ fun AccountScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Información de la app
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
@@ -197,7 +191,6 @@ fun AccountScreen(
         }
     }
 
-    // Diálogo de confirmación de cierre de sesión
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },

@@ -106,7 +106,6 @@ fun AppNavigation() {
                     )
                 }
                 
-                // ✅ AQUÍ ESTÁ LA CORRECCIÓN - Asegúrate de pasar onNavigateToCheckout
                 composable(Screen.Cart.route) { 
                     CartScreen(
                         onNavigateToCheckout = {
@@ -117,7 +116,6 @@ fun AppNavigation() {
                     )
                 }
 
-                // ✅ Ruta de Checkout
                 composable(Screen.Checkout.route) {
                     CheckoutScreen(
                         onNavigateBack = { 

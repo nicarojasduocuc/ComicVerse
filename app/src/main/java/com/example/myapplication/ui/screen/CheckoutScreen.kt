@@ -59,18 +59,15 @@ fun CheckoutScreen(
     var selectedPaymentMethod by remember { mutableStateOf(PaymentMethod.NONE) }
     var showAllProducts by remember { mutableStateOf(false) }
     
-    // Campos de tarjeta
     var cardNumber by remember { mutableStateOf("") }
     var cardHolder by remember { mutableStateOf("") }
     var expiryDate by remember { mutableStateOf("") }
     var cvv by remember { mutableStateOf("") }
 
-    // ✅ Cálculo correcto del total con impuestos
     val subtotal = cartItems.sumOf { it.price * it.quantity }
     val impuestos = if (subtotal > 0) 500.0 else 0.0
     val total = subtotal + impuestos
 
-    // ✅ Guardar el total para mostrarlo en el diálogo
     var finalTotal by remember { mutableStateOf(0.0) }
 
     LaunchedEffect(cartItems) {
@@ -170,7 +167,6 @@ fun CheckoutScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ✅ RESUMEN DE COMPRA (movido arriba)
             Text(
                 "Resumen de compra",
                 fontSize = 16.sp,
@@ -180,7 +176,6 @@ fun CheckoutScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Primer producto siempre visible
             if (cartItems.isNotEmpty()) {
                 Row(
                     modifier = Modifier
@@ -229,7 +224,6 @@ fun CheckoutScreen(
                 }
             }
 
-            // Botón para expandir/contraer productos
             if (cartItems.size > 1) {
                 Row(
                     modifier = Modifier
@@ -249,7 +243,6 @@ fun CheckoutScreen(
                     )
                 }
 
-                // Lista expandible de productos
                 AnimatedVisibility(
                     visible = showAllProducts,
                     enter = expandVertically(),
@@ -309,7 +302,6 @@ fun CheckoutScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ✅ Desglose de precios
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -385,7 +377,6 @@ fun CheckoutScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // ✅ TÍTULO MÉTODO DE PAGO (movido aquí)
             Text(
                 "Elija un método de pago",
                 fontSize = 24.sp,
@@ -402,7 +393,6 @@ fun CheckoutScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Botón Google Pay con logo y texto
             Button(
                 onClick = {
                     selectedPaymentMethod = PaymentMethod.GOOGLE_PAY
@@ -450,7 +440,6 @@ fun CheckoutScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Separador "O" en negrita
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -476,7 +465,6 @@ fun CheckoutScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Formulario de tarjeta con iconos correctos
             Text(
                 "Número de la tarjeta",
                 fontSize = 14.sp,
@@ -615,7 +603,6 @@ fun CheckoutScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Botón Pagar
             val isFormValid = cardNumber.length == 16 && 
                               cardHolder.isNotBlank() && 
                               expiryDate.length >= 4 && 
@@ -665,7 +652,6 @@ fun CheckoutScreen(
         }
     }
 
-    // ✅ Diálogo de éxito con el total correcto
     if (showSuccessDialog) {
         AlertDialog(
             onDismissRequest = { },

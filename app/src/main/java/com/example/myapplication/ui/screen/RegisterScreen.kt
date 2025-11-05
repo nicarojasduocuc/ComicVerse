@@ -56,7 +56,6 @@ fun RegisterScreen(
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
-        // Botón de retroceso
         IconButton(
             onClick = onNavigateBack,
             modifier = Modifier
@@ -79,7 +78,6 @@ fun RegisterScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Logo
             Image(
                 painter = painterResource(id = R.drawable.comicverse),
                 contentDescription = "Logo ComicVerse",
@@ -90,7 +88,6 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Título
             Text(
                 text = "CREAR CUENTA",
                 fontSize = 32.sp,
@@ -101,7 +98,6 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(42.dp))
 
-            // --- Campo de nombre ---
             Text(
                 text = "NOMBRE COMPLETO",
                 fontSize = 13.sp,
@@ -142,7 +138,6 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // --- Campo de correo ---
             Text(
                 text = "CORREO",
                 fontSize = 13.sp,
@@ -183,7 +178,6 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // --- Campo de contraseña ---
             Text(
                 text = "CONTRASEÑA",
                 fontSize = 13.sp,
@@ -225,7 +219,6 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // --- Campo de confirmar contraseña ---
             Text(
                 text = "CONFIRMAR CONTRASEÑA",
                 fontSize = 13.sp,
@@ -265,7 +258,6 @@ fun RegisterScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
             )
 
-            // Mensajes de error o éxito
             if (errorMessage.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
@@ -289,7 +281,6 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(36.dp))
 
-            // Botón Registrarse
             Button(
                 onClick = {
                     scope.launch {
@@ -297,7 +288,6 @@ fun RegisterScreen(
                         errorMessage = ""
                         successMessage = ""
 
-                        // Validaciones
                         when {
                             name.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank() -> {
                                 errorMessage = "Todos los campos son obligatorios"
@@ -318,13 +308,11 @@ fun RegisterScreen(
                             else -> {
                                 delay(1500)
 
-                                // Verificar si el email ya existe
                                 val existingUser = db.userDao().getUserByEmail(email)
                                 if (existingUser != null) {
                                     errorMessage = "Este correo ya está registrado"
                                     isLoading = false
                                 } else {
-                                    // Registrar nuevo usuario
                                     val newUser = User(
                                         name = name.trim(),
                                         email = email.trim(),
@@ -367,7 +355,6 @@ fun RegisterScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        // ✅ Usando el ícono Person en lugar de ic_register_icon
                         Icon(
                             imageVector = Icons.Default.Person,
                             contentDescription = null,
@@ -391,7 +378,6 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Enlace para ir a login
             Row(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically

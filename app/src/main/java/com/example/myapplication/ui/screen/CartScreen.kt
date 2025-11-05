@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
-    onNavigateToCheckout: () -> Unit = {} // ✅ Parámetro para navegar a Checkout
+    onNavigateToCheckout: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.getDatabase(context) }
@@ -122,7 +122,6 @@ fun CartScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // ✅ Botón que navega a Checkout
                     Button(
                         onClick = onNavigateToCheckout,
                         modifier = Modifier
@@ -254,7 +253,6 @@ fun CartItemCard(
                     .height(150.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // Título y botón eliminar
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -292,7 +290,6 @@ fun CartItemCard(
                     }
                 }
 
-                // Controles de cantidad mejorados
                 Surface(
                     shape = RoundedCornerShape(50),
                     color = Color(0xFFFFF3E0),

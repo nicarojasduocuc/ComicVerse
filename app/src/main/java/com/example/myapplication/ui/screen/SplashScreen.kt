@@ -28,7 +28,7 @@ fun SplashScreen(
     val window = (context as Activity).window
 
     SideEffect {
-        window.statusBarColor = Color.White.toArgb() // ✅ Blanco
+        window.statusBarColor = Color.White.toArgb()
         window.navigationBarColor = Color.White.toArgb()
 
         val controller = WindowInsetsControllerCompat(window, view)
@@ -44,7 +44,7 @@ fun SplashScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White) // ✅ Color blanco directo
+            .background(Color.White)
             .padding(32.dp),
         contentAlignment = Alignment.Center
     ) {

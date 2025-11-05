@@ -52,7 +52,6 @@ fun LoginScreen(
             .statusBarsPadding()
             .navigationBarsPadding()
     ) {
-        // Botón de retroceso
         IconButton(
             onClick = onNavigateBack,
             modifier = Modifier
@@ -75,7 +74,6 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Logo
             Image(
                 painter = painterResource(id = R.drawable.comicverse),
                 contentDescription = "Logo ComicVerse",
@@ -86,7 +84,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Título
             Text(
                 text = "INICIAR SESIÓN",
                 fontSize = 32.sp,
@@ -97,7 +94,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(42.dp))
 
-            // --- Campo de correo ---
             Text(
                 text = "CORREO",
                 fontSize = 13.sp,
@@ -138,7 +134,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // --- Campo de contraseña ---
             Text(
                 text = "CONTRASEÑA",
                 fontSize = 13.sp,
@@ -190,7 +185,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(36.dp))
 
-            // ✅ Botón Acceder - NARANJA durante loading
             Button(
                 onClick = {
                     scope.launch {
@@ -215,12 +209,11 @@ fun LoginScreen(
                     .height(56.dp),
                 shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFF9800), // Naranja normal
+                    containerColor = Color(0xFFFF9800),
                     contentColor = Color.Black,
-                    disabledContainerColor = Color(0xFFE0E0E0), // Gris cuando disabled
+                    disabledContainerColor = Color(0xFFE0E0E0),
                     disabledContentColor = Color(0xFF9E9E9E)
                 ),
-                // ✅ Solo disabled cuando los campos están vacíos (NO durante loading)
                 enabled = email.isNotBlank() && password.isNotBlank()
             ) {
                 if (isLoading) {
@@ -258,7 +251,6 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // --- Enlace de registro ---
             Row(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically

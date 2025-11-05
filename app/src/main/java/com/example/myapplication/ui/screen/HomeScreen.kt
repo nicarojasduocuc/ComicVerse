@@ -67,24 +67,20 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Estados de filtros y búsqueda
     var showFilterDialog by remember { mutableStateOf(false) }
     var sortOption by remember { mutableStateOf(SortOption.NONE) }
     var priceRange by remember { mutableStateOf(0f..50000f) }
     var selectedTypes by remember { mutableStateOf<Set<String>>(emptySet()) }
     var showOnlyFavorites by remember { mutableStateOf(false) }
     
-    // ✅ Estados de búsqueda
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
 
-    // Verificar si el usuario actual es admin
     val userId = UserSession.getUserId(context)
     val isLoggedIn = UserSession.isLoggedIn(context)
     var isAdmin by remember { mutableStateOf(false) }
     var showAddDialog by remember { mutableStateOf(false) }
 
-    // Obtener favoritos si está logueado
     val favoriteProducts by if (isLoggedIn && userId > 0) {
         db.favoriteDao().getFavoritesByUser(userId).collectAsState(initial = emptyList())
     } else {
@@ -98,7 +94,6 @@ fun HomeScreen(
         }
     }
 
-    // ✅ Aplicar filtros + búsqueda
     val filteredProducts = remember(
         allProducts, 
         sortOption, 
@@ -110,7 +105,6 @@ fun HomeScreen(
     ) {
         var filtered = allProducts
 
-        // ✅ Filtrar por búsqueda
         if (searchQuery.isNotBlank()) {
             val query = searchQuery.lowercase().trim()
             filtered = filtered.filter { product ->
@@ -120,24 +114,20 @@ fun HomeScreen(
             }
         }
 
-        // Filtrar por tipos seleccionados
         if (selectedTypes.isNotEmpty()) {
             filtered = filtered.filter { it.type in selectedTypes }
         }
 
-        // Filtrar por rango de precio
         filtered = filtered.filter { 
             val price = it.salePrice ?: it.price
             price in priceRange.start.toDouble()..priceRange.endInclusive.toDouble()
         }
 
-        // Filtrar por favoritos
         if (showOnlyFavorites && isLoggedIn) {
             val favoriteIds = favoriteProducts.map { it.productId }.toSet()
             filtered = filtered.filter { it.id in favoriteIds }
         }
 
-        // Ordenar según la opción seleccionada
         when (sortOption) {
             SortOption.PRICE_LOW_TO_HIGH -> filtered.sortedBy { it.salePrice ?: it.price }
             SortOption.PRICE_HIGH_TO_LOW -> filtered.sortedByDescending { it.salePrice ?: it.price }
@@ -158,12 +148,10 @@ fun HomeScreen(
                 .background(whiteBackground)
                 .padding(horizontal = 20.dp)
         ) {
-            // ✅ Header con animación suave de izquierda/derecha
             AnimatedContent(
                 targetState = isSearchActive,
                 transitionSpec = {
                     if (targetState) {
-                        // Abriendo búsqueda: entra desde la derecha
                         slideInHorizontally(
                             initialOffsetX = { fullWidth -> fullWidth },
                             animationSpec = spring(
@@ -183,7 +171,6 @@ fun HomeScreen(
                             animationSpec = spring(stiffness = Spring.StiffnessLow)
                         )
                     } else {
-                        // Cerrando búsqueda: sale hacia la derecha
                         slideInHorizontally(
                             initialOffsetX = { fullWidth -> -fullWidth },
                             animationSpec = spring(
@@ -216,7 +203,6 @@ fun HomeScreen(
                         }
                     )
                 } else {
-                    // 🔹 Header normal con logo y botones
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -224,7 +210,6 @@ fun HomeScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // 🖼️ Logo ComicVerse
                         Image(
                             painter = painterResource(id = R.drawable.comicverse),
                             contentDescription = "ComicVerse Logo",
@@ -234,9 +219,7 @@ fun HomeScreen(
                             contentScale = ContentScale.Fit
                         )
 
-                        // 🔘 Botones
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            // Botón de filtro
                             IconButton(onClick = { showFilterDialog = true }) {
                                 Image(
                                     painter = painterResource(id = R.drawable.ic_filter_icon),
@@ -244,7 +227,6 @@ fun HomeScreen(
                                     modifier = Modifier.size(26.dp)
                                 )
                             }
-                            // ✅ Botón de búsqueda
                             IconButton(onClick = { isSearchActive = true }) {
                                 Image(
                                     painter = painterResource(id = R.drawable.ic_search_icon),
@@ -257,7 +239,6 @@ fun HomeScreen(
                 }
             }
 
-            // ✅ Mostrar contador de resultados si hay búsqueda activa
             AnimatedVisibility(
                 visible = searchQuery.isNotBlank(),
                 enter = fadeIn() + expandVertically(),
@@ -288,9 +269,7 @@ fun HomeScreen(
                 }
             }
 
-            // 🔹 Grid de productos
             if (filteredProducts.isEmpty()) {
-                // ✅ Mensaje cuando no hay resultados
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -345,7 +324,6 @@ fun HomeScreen(
             }
         }
 
-        // FloatingActionButton solo visible para admin
         if (isAdmin) {
             FloatingActionButton(
                 onClick = { showAddDialog = true },
@@ -359,7 +337,6 @@ fun HomeScreen(
             }
         }
 
-        // SnackbarHost
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier
@@ -367,7 +344,6 @@ fun HomeScreen(
                 .padding(bottom = 120.dp)
         )
 
-        // Diálogo de filtros
         if (showFilterDialog) {
             FilterDialog(
                 currentSortOption = sortOption,
@@ -393,7 +369,6 @@ fun HomeScreen(
             )
         }
 
-        // Diálogo para agregar producto
         if (showAddDialog) {
             AddProductDialog(
                 onDismiss = { showAddDialog = false },
@@ -413,7 +388,6 @@ fun HomeScreen(
     }
 }
 
-// ✅ Componente de búsqueda mejorado con una sola X
 @Composable
 fun SearchBar(
     query: String,
@@ -482,7 +456,6 @@ fun SearchBar(
                 )
             )
             
-            // ✅ Un solo botón X para limpiar y cerrar
             IconButton(
                 onClick = {
                     if (query.isNotEmpty()) {
@@ -520,12 +493,10 @@ fun FilterDialog(
     var selectedTypes by remember { mutableStateOf(currentSelectedTypes) }
     var showOnlyFavorites by remember { mutableStateOf(currentShowOnlyFavorites) }
 
-    // Obtener tipos únicos de productos
     val availableTypes = remember(allProducts) {
         allProducts.map { it.type }.distinct().sorted()
     }
 
-    // Calcular rango de precios de productos
     val minPrice = remember(allProducts) {
         allProducts.minOfOrNull { it.salePrice ?: it.price }?.toFloat() ?: 0f
     }
@@ -559,7 +530,6 @@ fun FilterDialog(
                     .verticalScroll(rememberScrollState())
                     .fillMaxWidth()
             ) {
-                // Ordenar por
                 Text(
                     "Ordenar por",
                     fontWeight = FontWeight.Bold,
@@ -592,7 +562,6 @@ fun FilterDialog(
                 Divider(color = Color.LightGray)
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Rango de precio
                 Text(
                     "Rango de precio",
                     fontWeight = FontWeight.Bold,
@@ -623,7 +592,6 @@ fun FilterDialog(
                 Divider(color = Color.LightGray)
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Filtrar por tipo
                 Text(
                     "Tipo de producto",
                     fontWeight = FontWeight.Bold,
@@ -660,7 +628,6 @@ fun FilterDialog(
                     }
                 }
 
-                // Mostrar solo favoritos (si está logueado)
                 if (isLoggedIn) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Divider(color = Color.LightGray)
@@ -754,7 +721,6 @@ fun ProductCard(
             .wrapContentHeight()
             .clickable(onClick = onClick)
     ) {
-        // 🔸 Imagen tipo póster sin bordes
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -771,7 +737,6 @@ fun ProductCard(
                 modifier = Modifier.fillMaxSize()
             )
 
-            // 🔸 Badge de descuento
             if (product.salePrice != null && product.salePrice!! < product.price) {
                 val discount =
                     ((1 - (product.salePrice!! / product.price)) * 100).toInt().coerceAtLeast(1)
@@ -794,7 +759,6 @@ fun ProductCard(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // 🔹 Título del producto
         Text(
             text = product.name,
             fontSize = 16.sp,
@@ -804,7 +768,6 @@ fun ProductCard(
             overflow = TextOverflow.Ellipsis
         )
 
-        // 🔹 Precio con oferta o normal
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (product.salePrice != null && product.salePrice!! < product.price) {
                 Text(

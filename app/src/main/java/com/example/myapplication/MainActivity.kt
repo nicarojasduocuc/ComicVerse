@@ -19,13 +19,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Habilitar edge-to-edge
         enableEdgeToEdge()
         
-        // Hacer que el contenido se dibuje detrás de la barra de estado
         WindowCompat.setDecorFitsSystemWindows(window, false)
         
-        // Crear usuario admin por defecto
         lifecycleScope.launch {
             val db = AppDatabase.getDatabase(applicationContext)
             val existingUser = db.userDao().getUserByEmail("comicverse@gmail.com")
@@ -44,13 +41,12 @@ class MainActivity : ComponentActivity() {
         
         setContent {
             MyApplicationTheme {
-                // Configurar barra de estado SIEMPRE con íconos oscuros (tema claro)
                 val systemUiController = rememberSystemUiController()
                 
                 SideEffect {
                     systemUiController.setSystemBarsColor(
                         color = Color.Transparent,
-                        darkIcons = true // SIEMPRE íconos oscuros (tema claro)
+                        darkIcons = true
                     )
                 }
                 

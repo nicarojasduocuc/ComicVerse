@@ -9,7 +9,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -24,18 +23,19 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.R
 import com.example.myapplication.db.AppDatabase
 import com.example.myapplication.db.models.User
-import com.example.myapplication.utils.UserSession
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterScreen(
     onNavigateBack: () -> Unit,
-    onRegisterSuccess: () -> Unit = {}
+    onNavigateToLogin: () -> Unit
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.getDatabase(context) }
@@ -44,7 +44,9 @@ fun RegisterScreen(
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf("") }
+    var successMessage by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
 
     Box(
@@ -99,7 +101,7 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(42.dp))
 
-            // --- Campo Nombre ---
+            // --- Campo de nombre ---
             Text(
                 text = "NOMBRE COMPLETO",
                 fontSize = 13.sp,
@@ -140,7 +142,7 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // --- Campo Correo ---
+            // --- Campo de correo ---
             Text(
                 text = "CORREO",
                 fontSize = 13.sp,
@@ -181,7 +183,7 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // --- Campo Contraseña ---
+            // --- Campo de contraseña ---
             Text(
                 text = "CONTRASEÑA",
                 fontSize = 13.sp,
@@ -221,6 +223,49 @@ fun RegisterScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
             )
 
+            Spacer(modifier = Modifier.height(18.dp))
+
+            // --- Campo de confirmar contraseña ---
+            Text(
+                text = "CONFIRMAR CONTRASEÑA",
+                fontSize = 13.sp,
+                color = Color(0xFF757575),
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 6.dp, bottom = 8.dp)
+            )
+
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = Color(0xFFBDBDBD),
+                        modifier = Modifier.size(20.dp)
+                    )
+                },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .shadow(4.dp, RoundedCornerShape(24.dp)),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent,
+                    cursorColor = Color(0xFFFF9800)
+                ),
+                textStyle = LocalTextStyle.current.copy(fontSize = 15.sp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+            )
+
+            // Mensajes de error o éxito
             if (errorMessage.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
@@ -231,28 +276,70 @@ fun RegisterScreen(
                 )
             }
 
+            if (successMessage.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = successMessage,
+                    color = Color(0xFF4CAF50),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
             Spacer(modifier = Modifier.height(36.dp))
 
-            // ✅ Botón Registrar
+            // Botón Registrarse
             Button(
                 onClick = {
                     scope.launch {
                         isLoading = true
                         errorMessage = ""
+                        successMessage = ""
 
-                        val existingUser = db.userDao().getUserByEmail(email)
-                        if (existingUser != null) {
-                            errorMessage = "El email ya está registrado"
-                            isLoading = false
-                        } else if (name.isBlank() || email.isBlank() || password.isBlank()) {
-                            errorMessage = "Completa todos los campos"
-                            isLoading = false
-                        } else {
-                            val user = User(name = name, email = email, password = password)
-                            val userId = db.userDao().insertUser(user)
-                            UserSession.saveUserId(context, userId.toInt())
-                            isLoading = false
-                            onRegisterSuccess()
+                        // Validaciones
+                        when {
+                            name.isBlank() || email.isBlank() || password.isBlank() || confirmPassword.isBlank() -> {
+                                errorMessage = "Todos los campos son obligatorios"
+                                isLoading = false
+                            }
+                            !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() -> {
+                                errorMessage = "El correo no es válido"
+                                isLoading = false
+                            }
+                            password.length < 6 -> {
+                                errorMessage = "La contraseña debe tener al menos 6 caracteres"
+                                isLoading = false
+                            }
+                            password != confirmPassword -> {
+                                errorMessage = "Las contraseñas no coinciden"
+                                isLoading = false
+                            }
+                            else -> {
+                                delay(1500)
+
+                                // Verificar si el email ya existe
+                                val existingUser = db.userDao().getUserByEmail(email)
+                                if (existingUser != null) {
+                                    errorMessage = "Este correo ya está registrado"
+                                    isLoading = false
+                                } else {
+                                    // Registrar nuevo usuario
+                                    val newUser = User(
+                                        name = name.trim(),
+                                        email = email.trim(),
+                                        password = password,
+                                        isAdmin = false
+                                    )
+                                    db.userDao().insertUser(newUser)
+
+                                    successMessage = "¡Cuenta creada exitosamente!"
+                                    isLoading = false
+
+                                    delay(1500)
+                                    onNavigateToLogin()
+                                }
+                            }
                         }
                     }
                 },
@@ -266,7 +353,8 @@ fun RegisterScreen(
                     disabledContainerColor = Color(0xFFE0E0E0),
                     disabledContentColor = Color(0xFF9E9E9E)
                 ),
-                enabled = name.isNotBlank() && email.isNotBlank() && password.isNotBlank()
+                enabled = name.isNotBlank() && email.isNotBlank() && 
+                         password.isNotBlank() && confirmPassword.isNotBlank()
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
@@ -279,20 +367,20 @@ fun RegisterScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_login_icon),
+                        // ✅ Usando el ícono Person en lugar de ic_register_icon
+                        Icon(
+                            imageVector = Icons.Default.Person,
                             contentDescription = null,
-                            colorFilter = ColorFilter.tint(
-                                if (name.isNotBlank() && email.isNotBlank() && password.isNotBlank())
-                                    Color.Black
-                                else
-                                    Color(0xFF9E9E9E)
-                            ),
+                            tint = if (name.isNotBlank() && email.isNotBlank() && 
+                                password.isNotBlank() && confirmPassword.isNotBlank())
+                                Color.Black
+                            else
+                                Color(0xFF9E9E9E),
                             modifier = Modifier.size(22.dp)
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "Registrar",
+                            text = "Registrarse",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 0.5.sp
@@ -303,7 +391,7 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // --- Enlace volver al login ---
+            // Enlace para ir a login
             Row(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
@@ -318,7 +406,7 @@ fun RegisterScreen(
                     color = Color(0xFFFF9800),
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
-                    modifier = Modifier.clickable { onNavigateBack() }
+                    modifier = Modifier.clickable { onNavigateToLogin() }
                 )
             }
 

@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Database(
     entities = [User::class, Product::class, CartItem::class, Favorite::class],
-    version = 7,  // Incrementar versión
+    version = 1,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -37,13 +37,11 @@ abstract class AppDatabase : RoomDatabase() {
                         override fun onCreate(db: SupportSQLiteDatabase) {
                             super.onCreate(db)
                             
-                            // Crear usuario admin por defecto
                             db.execSQL("""
                                 INSERT INTO users (id, name, email, password, isAdmin) 
                                 VALUES (1, 'Administrador', 'comicverse@gmail.com', 'comicverse', 1)
                             """)
                             
-                            // Insertar productos iniciales
                             db.execSQL("""
                                 INSERT INTO products (name, type, year, stock, price, salePrice, description, imageUrl) VALUES
                                 ('One Piece Vol. 1', 'Manga', 1997, 25, 12990, 9990, 'La aventura pirata de Luffy en busca del tesoro legendario One Piece.', 'https://i.pinimg.com/736x/b2/de/8c/b2de8c3896220fa0531ead303cfe6668.jpg'),
@@ -60,7 +58,7 @@ abstract class AppDatabase : RoomDatabase() {
                                 ('Berserk Vol. 1', 'Manga', 1989, 8, 15990, 13490, 'Guts, un guerrero maldito, lucha en un oscuro mundo medieval de demonios y sangre.', 'https://m.media-amazon.com/images/I/91Gs6wk1TdL._UF1000,1000_QL80_.jpg'),
                                 ('Death Note Vol. 1', 'Manga', 2003, 22, 11990, 9990, 'Un estudiante encuentra un cuaderno que puede matar a cualquiera cuyo nombre escriba.', 'https://m.media-amazon.com/images/I/81iDNjn-r3L._AC_UF1000,1000_QL80_.jpg'),
                                 ('Invincible Vol. 1', 'Comic', 2003, 14, 13990, NULL, 'Un adolescente descubre que su padre es el superhéroe (y villano) más poderoso del planeta.', 'https://images.cdn1.buscalibre.com/fit-in/360x360/ea/a7/eaa7caf31cadf76857a2489bbe48e69f.jpg'),
-                                ('Demon Slayer Vol. 1', 'Manga', 2016, 25, 12490, 10990, 'Tanjiro busca vengar a su familia y curar a su hermana demonio.', 'https://images-cdn.ubuy.com.ar/634f22d146f0f87243748855-demon-slayer-kimetsu-no-yaiba-poster.jpg'),
+                                ('Demon Slayer Vol. 1', 'Manga', 2016, 25, 12490, 10990, 'Tanjiro busca vengar a su familia y curar a su hermana demonio.', 'https://imagesA-cdn.ubuy.com.ar/634f22d146f0f87243748855-demon-slayer-kimetsu-no-yaiba-poster.jpg'),
                                 ('Tokyo Ghoul Vol. 1', 'Manga', 2011, 16, 11990, NULL, 'Kaneki se convierte en mitad ghoul tras un encuentro fatal.', 'https://www.booktopia.com.au/covers/big/9781421580364/0000/tokyo-ghoul-vol-1.jpg'),
                                 ('Chainsaw Man Vol. 2', 'Manga', 2019, 15, 12990, NULL, 'Segunda parte de la sangrienta historia de Denji y los cazadores de demonios.', 'https://m.media-amazon.com/images/I/81HC2HywjbL.jpg')
                             """)
@@ -74,7 +72,6 @@ abstract class AppDatabase : RoomDatabase() {
     }
 }
 
-// ========== USER DAO ==========
 @Dao
 interface UserDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -96,7 +93,6 @@ interface UserDao {
     suspend fun deleteUser(user: User)
 }
 
-// ========== PRODUCT DAO ==========
 @Dao
 interface ProductDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -115,7 +111,6 @@ interface ProductDao {
     suspend fun getProductById(productId: Int): Product?
 }
 
-// ========== CART DAO ==========
 @Dao
 interface CartDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -158,7 +153,6 @@ data class CartItemWithProduct(
     val quantity: Int
 )
 
-// ========== FAVORITE DAO ==========
 @Dao
 interface FavoriteDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)

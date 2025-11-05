@@ -176,6 +176,12 @@ fun AppNavigation() {
                             navController.navigate(Screen.Login.route) {
                                 popUpTo(Screen.Register.route) { inclusive = true }
                             }
+                        },
+                        onNavigateToLogin = {
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(Screen.Register.route) { inclusive = true }
+                                launchSingleTop = true
+                            }
                         }
                     )
                 }

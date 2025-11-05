@@ -100,7 +100,12 @@ fun AppNavigation() {
                     val productId = backStackEntry.arguments?.getInt("productId") ?: 0
                     DetailScreen(
                         productId = productId,
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToLogin = {
+                            navController.navigate(Screen.Login.route) {
+                                launchSingleTop = true
+                            }
+                        }
                     )
                 }
                 

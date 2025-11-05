@@ -13,8 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -28,15 +28,18 @@ import coil.request.ImageRequest
 import com.example.myapplication.R
 import com.example.myapplication.db.AppDatabase
 import com.example.myapplication.db.models.CartItem
+import com.example.myapplication.db.models.Favorite
 import com.example.myapplication.db.models.Product
 import com.example.myapplication.utils.PriceFormatter
+import com.example.myapplication.utils.UserSession
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DetailScreen(
     productId: Int,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToLogin: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.getDatabase(context) }
@@ -45,6 +48,19 @@ fun DetailScreen(
 
     var product by remember { mutableStateOf<Product?>(null) }
     var quantity by remember { mutableStateOf(1) }
+    val isLoggedIn = UserSession.isLoggedIn(context)
+    val loggedUserId = UserSession.getUserId(context)
+    
+    // Para el carrito siempre usar userId = 1 (invitado) si no está logueado
+    val cartUserId = if (isLoggedIn) loggedUserId else 1
+    
+    // Para favoritos solo verificar si está logueado
+    val isFavorite by if (isLoggedIn && loggedUserId > 0) {
+        db.favoriteDao().isFavorite(loggedUserId, productId)
+            .collectAsState(initial = false)
+    } else {
+        remember { mutableStateOf(false) }
+    }
 
     LaunchedEffect(productId) {
         product = db.productDao().getProductById(productId)
@@ -75,7 +91,7 @@ fun DetailScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(500.dp)
+                            .height(450.dp)
                     ) {
                         // Imagen de fondo con opacidad 40%
                         AsyncImage(
@@ -108,7 +124,7 @@ fun DetailScreen(
                                 .zIndex(2f)
                         )
 
-                        // Header (Volver + Corazón) - más pegado al status bar
+                        // Header (Volver + Corazón)
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -122,37 +138,73 @@ fun DetailScreen(
                                 modifier = Modifier
                                     .clip(CircleShape)
                                     .clickable { onNavigateBack() }
-                                    .padding(8.dp)
+                                    .padding(0.dp)
                             ) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_back_icon),
                                     contentDescription = "Volver",
-                                    modifier = Modifier.size(22.dp),
+                                    modifier = Modifier.size(28.dp),
                                     tint = Color.Black
                                 )
-                                Spacer(Modifier.width(6.dp))
+                                Spacer(Modifier.width(8.dp))
                                 Text(
                                     text = "Volver",
-                                    fontSize = 17.sp,
+                                    fontSize = 20.sp,
                                     color = Color.Black,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.SemiBold
                                 )
                             }
 
+                            // Botón de favorito (solo funciona si está logueado)
                             IconButton(
-                                onClick = { /* TODO: Favoritos */ },
-                                modifier = Modifier.size(40.dp)
+                                onClick = {
+                                    if (!isLoggedIn) {
+                                        // Si no está logueado, redirigir a login
+                                        onNavigateToLogin()
+                                    } else {
+                                        // Si está logueado, agregar/quitar de favoritos
+                                        scope.launch {
+                                            val existingFavorite = db.favoriteDao()
+                                                .getFavorite(loggedUserId, productId)
+                                            
+                                            if (existingFavorite != null) {
+                                                db.favoriteDao().deleteFavorite(existingFavorite)
+                                                snackbarHostState.showSnackbar(
+                                                    message = "Eliminado de favoritos",
+                                                    duration = SnackbarDuration.Short
+                                                )
+                                            } else {
+                                                db.favoriteDao().insertFavorite(
+                                                    Favorite(
+                                                        userId = loggedUserId,
+                                                        productId = productId
+                                                    )
+                                                )
+                                                snackbarHostState.showSnackbar(
+                                                    message = "Agregado a favoritos",
+                                                    duration = SnackbarDuration.Short
+                                                )
+                                            }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.size(32.dp)
                             ) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.ic_heart_icon),
+                                    painter = painterResource(
+                                        id = if (isFavorite) 
+                                            R.drawable.ic_heart_selected_icon 
+                                        else 
+                                            R.drawable.ic_heart_icon
+                                    ),
                                     contentDescription = "Favorito",
-                                    modifier = Modifier.size(28.dp),
-                                    tint = Color.Black
+                                    modifier = Modifier.size(32.dp),
+                                    tint = Color.Unspecified
                                 )
                             }
                         }
 
-                        // Poster centrado
+                        // Poster centrado sin border radius
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -161,9 +213,9 @@ fun DetailScreen(
                         ) {
                             Surface(
                                 modifier = Modifier
-                                    .width(220.dp)
-                                    .height(330.dp),
-                                shape = RoundedCornerShape(12.dp),
+                                    .width(217.dp)
+                                    .height(325.dp),
+                                shape = RoundedCornerShape(0.dp),
                                 shadowElevation = 16.dp,
                                 color = Color.White
                             ) {
@@ -287,7 +339,7 @@ fun DetailScreen(
 
                         Spacer(Modifier.height(32.dp))
 
-                        // Controles de cantidad y botón (NO FIXED, parte del scroll)
+                        // Controles de cantidad y botón
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -338,37 +390,44 @@ fun DetailScreen(
                                 }
                             }
 
-                            // Botón agregar al carrito
+                            // Botón agregar al carrito (funciona sin login usando userId = 1)
                             Button(
                                 onClick = {
                                     scope.launch {
-                                        val existingItem = db.cartDao().getCartItem(1, prod.id)
-                                        if (existingItem != null) {
-                                            val newQuantity = existingItem.quantity + quantity
-                                            if (newQuantity <= prod.stock) {
-                                                db.cartDao().updateCartItem(
-                                                    existingItem.copy(quantity = newQuantity)
-                                                )
-                                                snackbarHostState.showSnackbar(
-                                                    message = "Cantidad actualizada",
-                                                    duration = SnackbarDuration.Short
-                                                )
+                                        try {
+                                            val existingItem = db.cartDao().getCartItem(cartUserId, prod.id)
+                                            if (existingItem != null) {
+                                                val newQuantity = existingItem.quantity + quantity
+                                                if (newQuantity <= prod.stock) {
+                                                    db.cartDao().updateCartItem(
+                                                        existingItem.copy(quantity = newQuantity)
+                                                    )
+                                                    snackbarHostState.showSnackbar(
+                                                        message = "Cantidad actualizada",
+                                                        duration = SnackbarDuration.Short
+                                                    )
+                                                } else {
+                                                    snackbarHostState.showSnackbar(
+                                                        message = "Stock insuficiente",
+                                                        duration = SnackbarDuration.Short
+                                                    )
+                                                }
                                             } else {
+                                                db.cartDao().insertCartItem(
+                                                    CartItem(
+                                                        productId = prod.id,
+                                                        userId = cartUserId,
+                                                        quantity = quantity
+                                                    )
+                                                )
                                                 snackbarHostState.showSnackbar(
-                                                    message = "Stock insuficiente",
+                                                    message = "Agregado al carrito",
                                                     duration = SnackbarDuration.Short
                                                 )
                                             }
-                                        } else {
-                                            db.cartDao().insertCartItem(
-                                                CartItem(
-                                                    productId = prod.id,
-                                                    userId = 1,
-                                                    quantity = quantity
-                                                )
-                                            )
+                                        } catch (e: Exception) {
                                             snackbarHostState.showSnackbar(
-                                                message = "Agregado al carrito",
+                                                message = "Error al agregar al carrito",
                                                 duration = SnackbarDuration.Short
                                             )
                                         }

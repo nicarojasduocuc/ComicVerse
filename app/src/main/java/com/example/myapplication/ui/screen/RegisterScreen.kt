@@ -46,10 +46,10 @@ fun RegisterScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(Color.White) // ✅ Color blanco directo
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 32.dp)
-            .padding(bottom = 120.dp), // Espacio para el NavigationBar flotante
+            .padding(bottom = 120.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -65,12 +65,12 @@ fun RegisterScreen(
             text = "Crear Cuenta",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
+            color = Color.Black
         )
         Text(
             text = "Completa tus datos para registrarte",
             fontSize = 16.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = Color.Gray
         )
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -116,7 +116,7 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = errorMessage,
-                color = MaterialTheme.colorScheme.error,
+                color = Color.Red,
                 fontSize = 14.sp
             )
         }
@@ -164,12 +164,12 @@ fun RegisterScreen(
         Spacer(modifier = Modifier.height(28.dp))
 
         Row {
-            Text("¿Ya tienes una cuenta?", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("¿Ya tienes una cuenta?", color = Color.Gray)
             Spacer(modifier = Modifier.width(4.dp))
             TextButton(onClick = onNavigateBack) {
                 Text(
                     text = "Inicia sesión",
-                    color = MaterialTheme.colorScheme.secondary,
+                    color = Color(0xFFFF9800),
                     fontWeight = FontWeight.Bold
                 )
             }

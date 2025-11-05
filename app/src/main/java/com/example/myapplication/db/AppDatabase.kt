@@ -47,9 +47,9 @@ abstract class AppDatabase : RoomDatabase() {
                             db.execSQL("""
                                 INSERT INTO products (name, type, year, stock, price, salePrice, description, imageUrl) VALUES
                                 ('One Piece Vol. 1', 'Manga', 1997, 25, 12990, 9990, 'La aventura pirata de Luffy en busca del tesoro legendario One Piece.', 'https://i.pinimg.com/736x/b2/de/8c/b2de8c3896220fa0531ead303cfe6668.jpg'),
-                                ('Naruto Vol. 1', 'Manga', 1999, 30, 11990, NULL, 'La historia de un joven ninja que busca reconocimiento y sueña con convertirse en Hokage.', 'https://m.media-amazon.com/images/I/91VNFP+SbPL._AC_UF1000,1000_QL80_.jpg'),
-                                ('Attack on Titan Vol. 1', 'Manga', 2009, 20, 13990, 11990, 'La humanidad vive encerrada tras muros gigantes para protegerse de los titanes.', 'https://m.media-amazon.com/images/I/81OKAXJ3QUL._AC_UF1000,1000_QL80_.jpg'),
-                                ('My Hero Academia Vol. 1', 'Manga', 2014, 28, 12490, NULL, 'En un mundo donde casi todos tienen superpoderes, un chico sin ellos sueña con ser un héroe.', 'https://m.media-amazon.com/images/I/71MJy92c-bL._AC_UF1000,1000_QL80_.jpg'),
+                                ('Naruto Vol. 1', 'Manga', 1999, 30, 11990, NULL, 'La historia de un joven ninja que busca reconocimiento y sueña con convertirse en Hokage.', 'https://m.media-amazon.com/images/I/91RpwagB7uL.jpg'),
+                                ('Attack on Titan Vol. 1', 'Manga', 2009, 20, 13990, 11990, 'La humanidad vive encerrada tras muros gigantes para protegerse de los titanes.', 'https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1432712438i/13154150.jpg'),
+                                ('My Hero Academia Vol. 1', 'Manga', 2014, 28, 12490, NULL, 'En un mundo donde casi todos tienen superpoderes, un chico sin ellos sueña con ser un héroe.', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTA7rkXdYAzmUpL4DYVmG5IAaFDjBgofA_Y2A&s'),
                                 ('Batman: Year One', 'Comic', 1987, 10, 16990, NULL, 'El renacimiento del Caballero Oscuro en una Gotham corrupta.', 'https://m.media-amazon.com/images/M/MV5BNDk0M2YzZTEtZGU1YS00MGVmLThmNjEtODE3MGRiNTVjN2FiXkEyXkFqcGc@._V1_.jpg'),
                                 ('Solo Leveling Vol. 1', 'Manhwa', 2018, 30, 14990, 11990, 'Un cazador débil obtiene el poder de crecer sin límites tras un misterioso evento.', 'https://i.pinimg.com/474x/3d/c1/54/3dc1547eaab88358af5ebfbef3521a35.jpg'),
                                 ('Chainsaw Man Vol. 1', 'Manga', 2018, 20, 12990, 10990, 'Denji, un joven cazador de demonios, se fusiona con su demonio motosierra.', 'https://m.media-amazon.com/images/I/81s8xJUzWGL.jpg'),
@@ -61,7 +61,7 @@ abstract class AppDatabase : RoomDatabase() {
                                 ('Death Note Vol. 1', 'Manga', 2003, 22, 11990, 9990, 'Un estudiante encuentra un cuaderno que puede matar a cualquiera cuyo nombre escriba.', 'https://m.media-amazon.com/images/I/81iDNjn-r3L._AC_UF1000,1000_QL80_.jpg'),
                                 ('Invincible Vol. 1', 'Comic', 2003, 14, 13990, NULL, 'Un adolescente descubre que su padre es el superhéroe (y villano) más poderoso del planeta.', 'https://images.cdn1.buscalibre.com/fit-in/360x360/ea/a7/eaa7caf31cadf76857a2489bbe48e69f.jpg'),
                                 ('Demon Slayer Vol. 1', 'Manga', 2016, 25, 12490, 10990, 'Tanjiro busca vengar a su familia y curar a su hermana demonio.', 'https://images-cdn.ubuy.com.ar/634f22d146f0f87243748855-demon-slayer-kimetsu-no-yaiba-poster.jpg'),
-                                ('Tokyo Ghoul Vol. 1', 'Manga', 2011, 16, 11990, NULL, 'Kaneki se convierte en mitad ghoul tras un encuentro fatal.', 'https://prodimage.images-bn.com/pimages/9781421580364_p0_v4_s1200x630.jpg'),
+                                ('Tokyo Ghoul Vol. 1', 'Manga', 2011, 16, 11990, NULL, 'Kaneki se convierte en mitad ghoul tras un encuentro fatal.', 'https://www.booktopia.com.au/covers/big/9781421580364/0000/tokyo-ghoul-vol-1.jpg'),
                                 ('Chainsaw Man Vol. 2', 'Manga', 2019, 15, 12990, NULL, 'Segunda parte de la sangrienta historia de Denji y los cazadores de demonios.', 'https://m.media-amazon.com/images/I/81HC2HywjbL.jpg')
                             """)
                         }

@@ -26,26 +26,25 @@ fun SplashScreen(
     val view = LocalView.current
     val context = LocalContext.current
     val window = (context as Activity).window
-    val backgroundColor = MaterialTheme.colorScheme.background
 
     SideEffect {
-        window.statusBarColor = backgroundColor.toArgb()
-        window.navigationBarColor = backgroundColor.toArgb()
+        window.statusBarColor = Color.White.toArgb() // ✅ Blanco
+        window.navigationBarColor = Color.White.toArgb()
 
         val controller = WindowInsetsControllerCompat(window, view)
-        controller.isAppearanceLightStatusBars = true  // SIEMPRE íconos oscuros
-        controller.isAppearanceLightNavigationBars = true  // SIEMPRE íconos oscuros
+        controller.isAppearanceLightStatusBars = true
+        controller.isAppearanceLightNavigationBars = true
     }
 
     LaunchedEffect(Unit) {
-        delay(2000) // 2 segundos
+        delay(2000)
         onNavigateToHome()
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(Color.White) // ✅ Color blanco directo
             .padding(32.dp),
         contentAlignment = Alignment.Center
     ) {

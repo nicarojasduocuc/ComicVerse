@@ -40,7 +40,6 @@ fun AccountScreen(
     var currentUser by remember { mutableStateOf<User?>(null) }
     var showLogoutDialog by remember { mutableStateOf(false) }
 
-
     LaunchedEffect(Unit) {
         val userId = UserSession.getUserId(context)
         if (userId != -1) {
@@ -51,7 +50,7 @@ fun AccountScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(Color.White) // ✅ Color blanco directo
     ) {
         Column(
             modifier = Modifier
@@ -85,7 +84,7 @@ fun AccountScreen(
                 text = currentUser?.name ?: "Cargando...",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
+                color = Color.Black
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -93,7 +92,7 @@ fun AccountScreen(
             Text(
                 text = currentUser?.email ?: "",
                 fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = Color.Gray
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -104,7 +103,7 @@ fun AccountScreen(
                 shape = RoundedCornerShape(16.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = Color.White
                 )
             ) {
                 Column(
@@ -114,7 +113,7 @@ fun AccountScreen(
                         text = "Información Personal",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = Color.Black
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -127,7 +126,7 @@ fun AccountScreen(
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
-                    Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Divider(color = Color.LightGray)
                     Spacer(modifier = Modifier.height(12.dp))
 
                     // Email
@@ -140,7 +139,6 @@ fun AccountScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-
 
             Button(
                 onClick = {
@@ -176,7 +174,7 @@ fun AccountScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    containerColor = Color(0xFFF5F5F5)
                 )
             ) {
                 Column(
@@ -192,7 +190,7 @@ fun AccountScreen(
                     Text(
                         text = "ComicVerse v1.0",
                         fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color.Gray
                     )
                 }
             }
@@ -256,14 +254,14 @@ fun InfoRow(
             Text(
                 text = label,
                 fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = Color.Gray
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = value,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = Color.Black
             )
         }
     }

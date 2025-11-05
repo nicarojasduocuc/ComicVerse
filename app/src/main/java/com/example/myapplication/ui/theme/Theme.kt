@@ -25,7 +25,10 @@ private val DarkColorScheme = darkColorScheme(
 private val LightColorScheme = lightColorScheme(
     primary = Purple40,
     secondary = PurpleGrey40,
-    tertiary = Pink40
+    tertiary = Pink40,
+    background = Color.White, // ✅ Color de fondo blanco consistente
+    surface = Color.White,
+    surfaceVariant = Color(0xFFF5F5F5)
 )
 
 @Composable

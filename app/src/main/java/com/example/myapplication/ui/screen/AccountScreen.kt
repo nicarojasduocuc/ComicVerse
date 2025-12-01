@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,7 +32,8 @@ import com.example.myapplication.utils.UserSession
 
 @Composable
 fun AccountScreen(
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onNavigateToOrders: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.getDatabase(context) }
@@ -39,7 +41,6 @@ fun AccountScreen(
 
     var currentUser by remember { mutableStateOf<User?>(null) }
     var showLogoutDialog by remember { mutableStateOf(false) }
-
 
     LaunchedEffect(Unit) {
         val userId = UserSession.getUserId(context)
@@ -51,7 +52,7 @@ fun AccountScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(Color.White)
     ) {
         Column(
             modifier = Modifier
@@ -62,7 +63,6 @@ fun AccountScreen(
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Logo o Avatar
             Box(
                 modifier = Modifier
                     .size(120.dp)
@@ -80,12 +80,11 @@ fun AccountScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Nombre del usuario
             Text(
                 text = currentUser?.name ?: "Cargando...",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
+                color = Color.Black
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -93,18 +92,17 @@ fun AccountScreen(
             Text(
                 text = currentUser?.email ?: "",
                 fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = Color.Gray
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Card con información del usuario
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = Color.White
                 )
             ) {
                 Column(
@@ -114,12 +112,11 @@ fun AccountScreen(
                         text = "Información Personal",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = Color.Black
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Nombre completo
                     InfoRow(
                         icon = Icons.Default.Person,
                         label = "Nombre Completo",
@@ -127,10 +124,9 @@ fun AccountScreen(
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
-                    Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Divider(color = Color.LightGray)
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Email
                     InfoRow(
                         icon = Icons.Default.Email,
                         label = "Correo Electrónico",
@@ -141,6 +137,31 @@ fun AccountScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            Button(
+                onClick = onNavigateToOrders,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF1976D2),
+                    contentColor = Color.White
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ShoppingBag,
+                    contentDescription = "Mis Pedidos",
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Mis Pedidos",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Button(
                 onClick = {
@@ -171,12 +192,11 @@ fun AccountScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Información de la app
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    containerColor = Color(0xFFF5F5F5)
                 )
             ) {
                 Column(
@@ -192,14 +212,13 @@ fun AccountScreen(
                     Text(
                         text = "ComicVerse v1.0",
                         fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = Color.Gray
                     )
                 }
             }
         }
     }
 
-    // Diálogo de confirmación de cierre de sesión
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
@@ -256,14 +275,14 @@ fun InfoRow(
             Text(
                 text = label,
                 fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = Color.Gray
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = value,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = Color.Black
             )
         }
     }

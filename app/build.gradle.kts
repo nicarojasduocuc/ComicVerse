@@ -49,6 +49,9 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:realtime-kt:2.6.0")
     implementation("io.ktor:ktor-client-android:2.3.12")
     implementation("io.ktor:ktor-client-core:2.3.12")
+    implementation("io.ktor:ktor-client-logging:2.3.12")
+    implementation("io.ktor:ktor-client-content-negotiation:2.3.12")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.12")
     implementation("io.ktor:ktor-utils:2.3.12")
     
     // Serialización JSON

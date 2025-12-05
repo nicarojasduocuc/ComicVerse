@@ -302,7 +302,7 @@ fun CheckoutScreen(
                         isProcessing = true
                         val userId = UserSession.getUserId(context) ?: 1
                         scope.launch {
-                            ordersViewModel.createOrder(userId, cartItems, total)
+                            ordersViewModel.createOrder(userId, cartItems)
                         }
                     }
                 },

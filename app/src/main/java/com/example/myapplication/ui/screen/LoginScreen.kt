@@ -50,9 +50,9 @@ fun LoginScreen(
                 if (user != null) {
                     // Guardar sesión
                     com.example.myapplication.utils.UserSession.saveUserId(context, user.id)
+                    isLoading = false
+                    onNavigateToHome()
                 }
-                isLoading = false
-                onNavigateToHome()
             }
             is Resource.Error -> {
                 isLoading = false

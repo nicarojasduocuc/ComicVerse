@@ -4,9 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.myapplication.data.models.Order
 import com.example.myapplication.data.models.CartItem
+import com.example.myapplication.data.models.CreateOrderItemRequest
 import com.example.myapplication.data.repository.OrderRepository
 import com.example.myapplication.data.repository.Resource
-import com.example.myapplication.data.repository.CreateOrderItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -54,20 +54,18 @@ class OrdersViewModel : ViewModel() {
     /**
      * Crea una nueva orden desde el carrito
      */
-    fun createOrder(userId: Int, cartItems: List<CartItem>, total: Int) {
+    fun createOrder(userId: Int, cartItems: List<CartItem>) {
         viewModelScope.launch {
             _createOrderState.value = Resource.Loading()
             
             val orderItems = cartItems.map { cartItem ->
-                val price = cartItem.manga.salePrice ?: cartItem.manga.price
-                CreateOrderItem(
-                    manga_id = cartItem.manga.id,
-                    quantity = cartItem.quantity,
-                    price = price
+                CreateOrderItemRequest(
+                    mangaId = cartItem.manga.id,
+                    quantity = cartItem.quantity
                 )
             }
             
-            _createOrderState.value = repository.createOrder(userId, total, orderItems)
+            _createOrderState.value = repository.createOrder(userId, orderItems)
         }
     }
     

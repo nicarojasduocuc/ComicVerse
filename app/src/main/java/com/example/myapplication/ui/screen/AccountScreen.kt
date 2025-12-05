@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Person
@@ -25,28 +26,36 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.R
-import com.example.myapplication.db.AppDatabase
-import com.example.myapplication.db.models.User
+import com.example.myapplication.data.models.User
+import com.example.myapplication.data.repository.Resource
+import com.example.myapplication.viewmodel.UserViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import com.example.myapplication.utils.UserSession
 
 @Composable
 fun AccountScreen(
     onLogout: () -> Unit,
-    onNavigateToOrders: () -> Unit = {}
+    onNavigateToOrders: () -> Unit = {},
+    onNavigateToAdmin: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val db = remember { AppDatabase.getDatabase(context) }
+    val userViewModel: UserViewModel = viewModel()
+    val currentUserState by userViewModel.currentUser.collectAsState()
     val scope = rememberCoroutineScope()
 
-    var currentUser by remember { mutableStateOf<User?>(null) }
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         val userId = UserSession.getUserId(context)
         if (userId != -1) {
-            currentUser = db.userDao().getUserById(userId)
+            userViewModel.loadUserProfile(userId)
         }
+    }
+    
+    val currentUser = when (val state = currentUserState) {
+        is Resource.Success -> state.data
+        else -> null
     }
 
     Box(
@@ -162,6 +171,35 @@ fun AccountScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            // Botón de Administración solo para usuario admin
+            if (currentUser?.email?.lowercase() == "maxi@gmail.com") {
+                Button(
+                    onClick = onNavigateToAdmin,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF4CAF50),
+                        contentColor = Color.White
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AdminPanelSettings,
+                        contentDescription = "Administración",
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Administración",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             Button(
                 onClick = {

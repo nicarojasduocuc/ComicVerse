@@ -31,6 +31,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.myapplication.ui.screens.*
 import com.example.myapplication.utils.UserSession
+import com.example.myapplication.viewmodel.CartViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,6 +41,9 @@ fun AppNavigation() {
     val context = LocalContext.current
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    
+    // ViewModel compartido del carrito
+    val cartViewModel: CartViewModel = viewModel()
 
     val screensWithBottomBar = listOf(
         Screen.Home.route,
@@ -91,12 +96,13 @@ fun AppNavigation() {
                 composable(
                     route = "detail/{productId}",
                     arguments = listOf(
-                        navArgument("productId") { type = NavType.IntType }
+                        navArgument("productId") { type = NavType.StringType }
                     )
                 ) { backStackEntry ->
-                    val productId = backStackEntry.arguments?.getInt("productId") ?: 0
+                    val productId = backStackEntry.arguments?.getString("productId") ?: ""
                     DetailScreen(
                         productId = productId,
+                        cartViewModel = cartViewModel,
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToLogin = {
                             navController.navigate(Screen.Login.route) {
@@ -108,6 +114,7 @@ fun AppNavigation() {
                 
                 composable(Screen.Cart.route) { 
                     CartScreen(
+                        cartViewModel = cartViewModel,
                         onNavigateToCheckout = {
                             navController.navigate(Screen.Checkout.route) {
                                 launchSingleTop = true
@@ -118,11 +125,12 @@ fun AppNavigation() {
 
                 composable(Screen.Checkout.route) {
                     CheckoutScreen(
+                        cartViewModel = cartViewModel,
                         onNavigateBack = { 
                             navController.popBackStack() 
                         },
-                        onNavigateToCart = {
-                            navController.navigate(Screen.Cart.route) {
+                        onNavigateToOrders = {
+                            navController.navigate(Screen.Orders.route) {
                                 popUpTo(Screen.Checkout.route) { inclusive = true }
                                 launchSingleTop = true
                             }
@@ -143,6 +151,11 @@ fun AppNavigation() {
                                 navController.navigate(Screen.Orders.route) {
                                     launchSingleTop = true
                                 }
+                            },
+                            onNavigateToAdmin = {
+                                navController.navigate(Screen.Admin.route) {
+                                    launchSingleTop = true
+                                }
                             }
                         )
                     } else {
@@ -160,13 +173,8 @@ fun AppNavigation() {
                         onNavigateToRegister = {
                             navController.navigate(Screen.Register.route)
                         },
-                        onNavigateBack = {
+                        onNavigateToHome = {
                             navController.navigate(Screen.Home.route) {
-                                popUpTo(Screen.Login.route) { inclusive = true }
-                            }
-                        },
-                        onLoginSuccess = {
-                            navController.navigate(Screen.Account.route) {
                                 popUpTo(Screen.Login.route) { inclusive = true }
                             }
                         }
@@ -185,14 +193,24 @@ fun AppNavigation() {
                                 popUpTo(Screen.Register.route) { inclusive = true }
                                 launchSingleTop = true
                             }
+                        },
+                        onRegisterSuccess = {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Register.route) { inclusive = true }
+                                launchSingleTop = true
+                            }
                         }
                     )
                 }
 
                 composable(Screen.Orders.route) {
-                    OrdersScreen(
+                    OrdersScreen()
+                }
+                
+                composable(Screen.Admin.route) {
+                    AdminScreen(
                         onNavigateBack = {
-                            navController.popBackStack()
+                            navController.navigateUp()
                         }
                     )
                 }

@@ -19,6 +19,7 @@ sealed class Screen(
     object Account : Screen("account", "Cuenta", iconRes = R.drawable.ic_user_icon)
     object Checkout : Screen("checkout", "Checkout")
     object Orders : Screen("orders", "Mis Pedidos")
+    object Admin : Screen("admin", "Administración")
     
     object Login : Screen("login", "Login", icon = Icons.Default.AccountCircle)
     object Register : Screen("register", "Register", icon = Icons.Default.AccountCircle)

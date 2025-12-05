@@ -8,13 +8,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -26,24 +28,23 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.myapplication.R
-import com.example.myapplication.db.AppDatabase
-import com.example.myapplication.db.CartItemWithProduct
+import com.example.myapplication.data.models.CartItem
 import com.example.myapplication.utils.PriceFormatter
-import kotlinx.coroutines.launch
+import com.example.myapplication.viewmodel.CartViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartScreen(
+    cartViewModel: CartViewModel,
     onNavigateToCheckout: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val db = remember { AppDatabase.getDatabase(context) }
-    val scope = rememberCoroutineScope()
-    val cartItems by db.cartDao().getCartWithProducts(userId = 1)
-        .collectAsState(initial = emptyList())
+    val cartItems by cartViewModel.cartItems.collectAsState()
+    val cartTotal by cartViewModel.cartTotal.collectAsState()
 
-    val subtotal = cartItems.sumOf { it.price * it.quantity }
-    val impuestos = if (subtotal > 0) 500.0 else 0.0
+    val subtotal = cartTotal
+    val impuestos = if (subtotal > 0) 500 else 0
     val total = subtotal + impuestos
     var expanded by remember { mutableStateOf(true) }
     
@@ -68,16 +69,6 @@ fun CartScreen(
                         .padding(bottom = 110.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    IconButton(onClick = { expanded = !expanded }) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_chevron_icon),
-                            contentDescription = "Expandir / Colapsar",
-                            modifier = Modifier
-                                .size(28.dp)
-                                .rotate(if (expanded) 180f else 0f)
-                        )
-                    }
-
                     AnimatedVisibility(visible = expanded) {
                         Column(
                             modifier = Modifier
@@ -153,7 +144,9 @@ fun CartScreen(
                 modifier = Modifier.padding(start = 20.dp, top = 20.dp, bottom = 12.dp)
             )
 
-            if (cartItems.isEmpty()) EmptyCartView() else {
+            if (cartItems.isEmpty()) {
+                EmptyCartView()
+            } else {
                 LazyColumn(
                     contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 15.dp, bottom = 160.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -162,36 +155,17 @@ fun CartScreen(
                         CartItemCard(
                             item = item,
                             onIncrement = {
-                                scope.launch {
-                                    db.cartDao().getCartItem(1, item.id)?.let { cartItem ->
-                                        if (cartItem.quantity >= item.stock) {
-                                            snackbarHostState.showSnackbar(
-                                                message = "Stock máximo alcanzado (${item.stock} unidades)",
-                                                duration = SnackbarDuration.Short
-                                            )
-                                        } else {
-                                            db.cartDao().updateCartItem(
-                                                cartItem.copy(quantity = cartItem.quantity + 1)
-                                            )
-                                        }
-                                    }
+                                if (item.quantity >= item.manga.stock) {
+                                    // Mostrar mensaje de stock máximo
+                                } else {
+                                    cartViewModel.updateQuantity(item.manga.id, item.quantity + 1)
                                 }
                             },
                             onDecrement = {
-                                scope.launch {
-                                    db.cartDao().getCartItem(1, item.id)?.let {
-                                        if (it.quantity > 1)
-                                            db.cartDao().updateCartItem(it.copy(quantity = it.quantity - 1))
-                                        else db.cartDao().deleteCartItem(it)
-                                    }
-                                }
+                                cartViewModel.updateQuantity(item.manga.id, item.quantity - 1)
                             },
                             onDelete = {
-                                scope.launch {
-                                    db.cartDao().getCartItem(1, item.id)?.let {
-                                        db.cartDao().deleteCartItem(it)
-                                    }
-                                }
+                                cartViewModel.removeFromCart(item.manga.id)
                             }
                         )
                     }
@@ -203,136 +177,139 @@ fun CartScreen(
 
 @Composable
 fun EmptyCartView() {
-    Box(Modifier.fillMaxSize(), Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                imageVector = Icons.Default.ShoppingCart,
-                contentDescription = "Carrito vacío",
-                modifier = Modifier.size(120.dp),
-                tint = Color(0xFFFF9800)
-            )
-
-            Spacer(Modifier.height(8.dp))
-            Text("Tu carrito está vacío", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text("Agrega productos desde la tienda", color = Color.Gray)
-        }
+    Column(
+        Modifier
+            .fillMaxSize()
+            .padding(40.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            Icons.Default.ShoppingCart,
+            contentDescription = null,
+            tint = Color.LightGray,
+            modifier = Modifier.size(100.dp)
+        )
+        Spacer(Modifier.height(16.dp))
+        Text("Tu carrito está vacío", fontSize = 20.sp, color = Color.Gray)
     }
 }
 
 @Composable
 fun CartItemCard(
-    item: CartItemWithProduct,
+    item: CartItem,
     onIncrement: () -> Unit,
     onDecrement: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val manga = item.manga
+    val price = manga.salePrice ?: manga.price
+    
     Card(
-        Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(140.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = RoundedCornerShape(0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Row {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Imagen
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
-                    .data(item.imageUrl)
+                    .data(manga.poster)
                     .crossfade(true)
                     .build(),
-                contentDescription = item.name,
+                contentDescription = manga.name,
                 modifier = Modifier
-                    .width(100.dp)
-                    .height(150.dp),
+                    .width(90.dp)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(12.dp)),
                 contentScale = ContentScale.Crop
             )
 
-            Spacer(Modifier.width(12.dp))
-
+            // Información
             Column(
-                Modifier
+                modifier = Modifier
                     .weight(1f)
-                    .height(150.dp),
+                    .fillMaxHeight(),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
+                Column {
+                    Text(
+                        manga.name,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        color = Color.Black
+                    )
+                    
+                    Text(
+                        manga.type ?: "",
+                        fontSize = 12.sp,
+                        color = Color.Gray
+                    )
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            item.name,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp,
-                            maxLines = 2,
-                            lineHeight = 24.sp
-                        )
-                        if (item.type.isNotEmpty()) {
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                item.type,
-                                fontSize = 13.sp,
-                                color = Color.Gray
-                            )
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            PriceFormatter.formatPrice(item.price),
-                            color = Color.Black,
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 18.sp
-                        )
-                    }
-                    IconButton(onClick = onDelete, modifier = Modifier.size(28.dp)) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_delete_icon),
-                            contentDescription = "Eliminar"
-                        )
-                    }
-                }
+                    Text(
+                        PriceFormatter.formatPrice(price),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFF9800)
+                    )
 
-                Surface(
-                    shape = RoundedCornerShape(50),
-                    color = Color(0xFFFFF3E0),
-                    modifier = Modifier
-                        .height(44.dp)
-                        .width(140.dp)
-                ) {
+                    // Controles de cantidad
                     Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(
                             onClick = onDecrement,
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_minus_icon),
-                                contentDescription = "Disminuir",
-                                tint = Color(0xFFFF9800),
-                                modifier = Modifier.size(18.dp)
+                                Icons.Default.Remove,
+                                contentDescription = "Decrementar",
+                                tint = Color.Black
                             )
                         }
 
                         Text(
-                            text = "${item.quantity}",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            color = Color.Black
+                            "${item.quantity}",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
                         )
 
                         IconButton(
                             onClick = onIncrement,
-                            modifier = Modifier.size(28.dp),
-                            enabled = item.quantity < item.stock
+                            modifier = Modifier.size(32.dp),
+                            enabled = item.quantity < manga.stock
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_plus_icon),
-                                contentDescription = "Aumentar",
-                                tint = if (item.quantity < item.stock) Color(0xFFFF9800) else Color.Gray,
-                                modifier = Modifier.size(18.dp)
+                                Icons.Default.Add,
+                                contentDescription = "Incrementar",
+                                tint = if (item.quantity < manga.stock) Color.Black else Color.Gray
+                            )
+                        }
+
+                        IconButton(
+                            onClick = onDelete,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Eliminar",
+                                tint = Color.Red
                             )
                         }
                     }

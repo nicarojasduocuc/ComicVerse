@@ -1,275 +1,181 @@
 package com.example.myapplication.ui.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.myapplication.R
-import com.example.myapplication.db.AppDatabase
+import com.example.myapplication.data.repository.Resource
 import com.example.myapplication.utils.UserSession
-import kotlinx.coroutines.delay
+import com.example.myapplication.viewmodel.UserViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
-    onNavigateToRegister: () -> Unit,
-    onNavigateBack: () -> Unit,
-    onLoginSuccess: () -> Unit = {}
+    onNavigateToRegister: () -> Unit = {},
+    onNavigateToHome: () -> Unit = {}
 ) {
-    val context = LocalContext.current
-    val db = remember { AppDatabase.getDatabase(context) }
-    val scope = rememberCoroutineScope()
-
+    val userViewModel: UserViewModel = viewModel()
+    val loginState by userViewModel.loginState.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
+    
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .statusBarsPadding()
-            .navigationBarsPadding()
-    ) {
-        IconButton(
-            onClick = onNavigateBack,
-            modifier = Modifier
-                .padding(start = 8.dp, top = 8.dp)
-                .size(40.dp)
-                .align(Alignment.TopStart)
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.ic_back_icon),
-                contentDescription = "Volver",
-                modifier = Modifier.size(28.dp)
-            )
+    // Observar cambios en el estado de login
+    LaunchedEffect(loginState) {
+        when (val state = loginState) {
+            is Resource.Success -> {
+                val user = state.data
+                if (user != null) {
+                    // Guardar sesión
+                    com.example.myapplication.utils.UserSession.saveUserId(context, user.id)
+                }
+                isLoading = false
+                onNavigateToHome()
+            }
+            is Resource.Error -> {
+                isLoading = false
+                snackbarHostState.showSnackbar(
+                    (loginState as Resource.Error).message
+                )
+            }
+            is Resource.Loading -> {
+                isLoading = true
+            }
+            else -> {}
         }
+    }
 
+    Scaffold(
+        containerColor = Color.White,
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 28.dp),
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Image(
-                painter = painterResource(id = R.drawable.comicverse),
-                contentDescription = "Logo ComicVerse",
-                modifier = Modifier
-                    .width(160.dp)
-                    .height(48.dp)
-            )
-
-            Spacer(modifier = Modifier.height(28.dp))
-
             Text(
-                text = "INICIAR SESIÓN",
-                fontSize = 32.sp,
+                "ComicVerse",
+                fontSize = 36.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black,
-                letterSpacing = 0.8.sp
+                color = Color.Black
             )
-
-            Spacer(modifier = Modifier.height(42.dp))
-
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
             Text(
-                text = "CORREO",
-                fontSize = 13.sp,
-                color = Color(0xFF757575),
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 6.dp, bottom = 8.dp)
+                "Inicia sesión para continuar",
+                fontSize = 16.sp,
+                color = Color.Gray
             )
-
+            
+            Spacer(modifier = Modifier.height(48.dp))
+            
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                leadingIcon = {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_mail_icon),
-                        contentDescription = null,
-                        colorFilter = ColorFilter.tint(Color(0xFFBDBDBD)),
-                        modifier = Modifier.size(20.dp)
-                    )
-                },
+                label = { Text("Email") },
+                modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                shape = RoundedCornerShape(24.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .shadow(4.dp, RoundedCornerShape(24.dp)),
+                shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    cursorColor = Color(0xFFFF9800)
-                ),
-                textStyle = LocalTextStyle.current.copy(fontSize = 15.sp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                    focusedBorderColor = Color.Black,
+                    unfocusedBorderColor = Color.LightGray
+                )
             )
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            Text(
-                text = "CONTRASEÑA",
-                fontSize = 13.sp,
-                color = Color(0xFF757575),
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 6.dp, bottom = 8.dp)
-            )
-
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = null,
-                        tint = Color(0xFFBDBDBD),
-                        modifier = Modifier.size(20.dp)
-                    )
-                },
+                label = { Text("Contraseña") },
+                modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                shape = RoundedCornerShape(24.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .shadow(4.dp, RoundedCornerShape(24.dp)),
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = if (passwordVisible) "Ocultar" else "Mostrar"
+                        )
+                    }
+                },
+                shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    cursorColor = Color(0xFFFF9800)
-                ),
-                textStyle = LocalTextStyle.current.copy(fontSize = 15.sp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
-            )
-
-            if (errorMessage.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = errorMessage,
-                    color = Color(0xFFE53935),
-                    fontSize = 14.sp,
-                    modifier = Modifier.fillMaxWidth()
+                    focusedBorderColor = Color.Black,
+                    unfocusedBorderColor = Color.LightGray
                 )
-            }
-
-            Spacer(modifier = Modifier.height(36.dp))
-
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
             Button(
                 onClick = {
-                    scope.launch {
-                        isLoading = true
-                        errorMessage = ""
-                        
-                        delay(1500)
-                        
-                        val user = db.userDao().login(email, password)
-                        isLoading = false
-                        
-                        if (user != null) {
-                            UserSession.saveUserId(context, user.id)
-                            onLoginSuccess()
-                        } else {
-                            errorMessage = "Email o contraseña incorrectos"
+                    if (email.isNotEmpty() && password.isNotEmpty()) {
+                        scope.launch {
+                            userViewModel.login(email, password)
                         }
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
-                shape = RoundedCornerShape(28.dp),
+                enabled = !isLoading && email.isNotEmpty() && password.isNotEmpty(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFF9800),
-                    contentColor = Color.Black,
-                    disabledContainerColor = Color(0xFFE0E0E0),
-                    disabledContentColor = Color(0xFF9E9E9E)
+                    containerColor = Color.Black,
+                    contentColor = Color.White
                 ),
-                enabled = email.isNotBlank() && password.isNotBlank()
+                shape = RoundedCornerShape(28.dp)
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = Color.Black,
-                        strokeWidth = 3.dp
+                        color = Color.White
                     )
                 } else {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_login_icon),
-                            contentDescription = null,
-                            colorFilter = ColorFilter.tint(
-                                if (email.isNotBlank() && password.isNotBlank()) 
-                                    Color.Black 
-                                else 
-                                    Color(0xFF9E9E9E)
-                            ),
-                            modifier = Modifier.size(22.dp)
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "Acceder",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
-                        )
-                    }
+                    Text(
+                        "Iniciar Sesión",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            TextButton(onClick = onNavigateToRegister) {
                 Text(
-                    "¿No tienes una cuenta? ",
-                    color = Color(0xFF757575),
-                    fontSize = 15.sp
-                )
-                Text(
-                    text = "Regístrate",
-                    color = Color(0xFFFF9800),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    modifier = Modifier.clickable { onNavigateToRegister() }
+                    "¿No tienes cuenta? Regístrate",
+                    color = Color.Black
                 )
             }
-
-            Spacer(modifier = Modifier.height(48.dp))
         }
     }
 }

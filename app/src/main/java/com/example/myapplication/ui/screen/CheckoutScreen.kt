@@ -1,161 +1,101 @@
 package com.example.myapplication.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.example.myapplication.R
-import com.example.myapplication.db.AppDatabase
-import com.example.myapplication.db.CartItemWithProduct
-import com.example.myapplication.db.models.Order
-import com.example.myapplication.db.models.OrderItem
+import com.example.myapplication.data.repository.Resource
 import com.example.myapplication.utils.PriceFormatter
+import com.example.myapplication.viewmodel.CartViewModel
+import com.example.myapplication.viewmodel.OrdersViewModel
 import com.example.myapplication.utils.UserSession
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
-
-enum class PaymentMethod {
-    NONE, GOOGLE_PAY, CREDIT_CARD
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CheckoutScreen(
-    onNavigateBack: () -> Unit,
-    onNavigateToCart: () -> Unit
+    cartViewModel: CartViewModel,
+    onNavigateBack: () -> Unit = {},
+    onNavigateToOrders: () -> Unit = {}
 ) {
     val context = LocalContext.current
-    val db = remember { AppDatabase.getDatabase(context) }
+    val ordersViewModel: OrdersViewModel = viewModel()
+    
+    val cartItems by cartViewModel.cartItems.collectAsState()
+    val cartTotal by cartViewModel.cartTotal.collectAsState()
+    val createOrderState by ordersViewModel.createOrderState.collectAsState()
+    
     val scope = rememberCoroutineScope()
-    val userId = UserSession.getUserId(context)
+    val snackbarHostState = remember { SnackbarHostState() }
     
-    val cartItems by db.cartDao().getCartWithProducts(userId = userId)
-        .collectAsState(initial = emptyList())
-    
-    var showSuccessDialog by remember { mutableStateOf(false) }
     var isProcessing by remember { mutableStateOf(false) }
-    var isInitialLoad by remember { mutableStateOf(true) }
-    var selectedPaymentMethod by remember { mutableStateOf(PaymentMethod.NONE) }
-    var showAllProducts by remember { mutableStateOf(false) }
     
-    var cardNumber by remember { mutableStateOf("") }
-    var cardHolder by remember { mutableStateOf("") }
-    var expiryDate by remember { mutableStateOf("") }
-    var cvv by remember { mutableStateOf("") }
+    // Campos del formulario
+    var fullName by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+    var address by remember { mutableStateOf("") }
+    var city by remember { mutableStateOf("") }
+    var postalCode by remember { mutableStateOf("") }
+    var selectedPaymentMethod by remember { mutableStateOf("Tarjeta de Crédito") }
+    
+    val subtotal = cartTotal
+    val envio = if (subtotal > 0) 3000 else 0
+    val total = subtotal + envio
 
-    val subtotal = cartItems.sumOf { it.price * it.quantity }
-    val impuestos = if (subtotal > 0) 500.0 else 0.0
-    val total = subtotal + impuestos
 
-    var finalTotal by remember { mutableStateOf(0.0) }
-
-    LaunchedEffect(cartItems) {
-        if (isInitialLoad) {
-            kotlinx.coroutines.delay(100)
-            isInitialLoad = false
-        } else {
-            if (cartItems.isEmpty() && !showSuccessDialog) {
-                onNavigateToCart()
+    LaunchedEffect(createOrderState) {
+        when (createOrderState) {
+            is Resource.Success -> {
+                isProcessing = false
+                cartViewModel.clearCart()
+                snackbarHostState.showSnackbar("¡Pedido realizado con éxito!")
+                onNavigateToOrders()
             }
-        }
-    }
-
-    if (isInitialLoad) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.White),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(
-                color = Color(0xFFFF9800),
-                modifier = Modifier.size(48.dp)
-            )
-        }
-        return
-    }
-
-    if (cartItems.isEmpty() && !showSuccessDialog) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.White),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.padding(32.dp)
-            ) {
-                Text(
-                    "No hay productos en el carrito",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
+            is Resource.Error -> {
+                isProcessing = false
+                snackbarHostState.showSnackbar(
+                    (createOrderState as Resource.Error).message
                 )
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = onNavigateToCart,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFF9800),
-                        contentColor = Color.Black
-                    )
-                ) {
-                    Text("Volver al carrito")
-                }
             }
+            else -> {}
         }
-        return
     }
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = Color(0xFFF8F9FA),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { 
                     Text(
-                        "Cancelar",
-                        fontSize = 16.sp,
-                        color = Color.Black
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_back_icon),
-                            contentDescription = "Volver",
-                            modifier = Modifier.size(24.dp),
-                            tint = Color.Black
-                        )
-                    }
+                        "Finalizar Compra",
+                        fontWeight = FontWeight.Bold
+                    ) 
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = Color.Black
+                    containerColor = Color.White
                 )
             )
         }
@@ -164,609 +104,402 @@ fun CheckoutScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(Color.White)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp)
+                .background(Color(0xFFF8F9FA))
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
 
-            Text(
-                "Resumen de compra",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.Black
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            if (cartItems.isNotEmpty()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically
+                item {
+                    SectionHeader(
+                        icon = Icons.Default.LocalShipping,
+                        title = "Información de Envío"
+                    )
+                }
+                
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(cartItems[0].imageUrl)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = cartItems[0].name,
-                            modifier = Modifier
-                                .size(50.dp)
-                                .clip(RoundedCornerShape(8.dp)),
-                            contentScale = ContentScale.Crop
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = cartItems[0].name,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Color.Black,
-                                maxLines = 1
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            CustomTextField(
+                                value = fullName,
+                                onValueChange = { fullName = it },
+                                label = "Nombre Completo",
+                                icon = Icons.Default.Person
                             )
-                            Text(
-                                text = "Cantidad: ${cartItems[0].quantity}",
-                                fontSize = 12.sp,
-                                color = Color.Gray
+                            
+                            CustomTextField(
+                                value = phone,
+                                onValueChange = { phone = it },
+                                label = "Teléfono",
+                                icon = Icons.Default.Phone,
+                                keyboardType = KeyboardType.Phone
                             )
-                        }
-                    }
-                    Text(
-                        text = PriceFormatter.formatPrice(cartItems[0].price * cartItems[0].quantity),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
-                }
-            }
-
-            if (cartItems.size > 1) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showAllProducts = !showAllProducts }
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_chevron_icon),
-                        contentDescription = if (showAllProducts) "Ocultar" else "Mostrar todos",
-                        modifier = Modifier
-                            .size(20.dp)
-                            .rotate(if (showAllProducts) 180f else 0f),
-                        tint = Color.Black
-                    )
-                }
-
-                AnimatedVisibility(
-                    visible = showAllProducts,
-                    enter = expandVertically(),
-                    exit = shrinkVertically()
-                ) {
-                    Column {
-                        cartItems.drop(1).forEach { item ->
+                            
+                            CustomTextField(
+                                value = address,
+                                onValueChange = { address = it },
+                                label = "Dirección",
+                                icon = Icons.Default.Home
+                            )
+                            
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier.weight(1f),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    AsyncImage(
-                                        model = ImageRequest.Builder(context)
-                                            .data(item.imageUrl)
-                                            .crossfade(true)
-                                            .build(),
-                                        contentDescription = item.name,
-                                        modifier = Modifier
-                                            .size(50.dp)
-                                            .clip(RoundedCornerShape(8.dp)),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column {
-                                        Text(
-                                            text = item.name,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = Color.Black,
-                                            maxLines = 1
-                                        )
-                                        Text(
-                                            text = "Cantidad: ${item.quantity}",
-                                            fontSize = 12.sp,
-                                            color = Color.Gray
-                                        )
-                                    }
-                                }
+                                CustomTextField(
+                                    value = city,
+                                    onValueChange = { city = it },
+                                    label = "Ciudad",
+                                    icon = Icons.Default.LocationCity,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                
+                                CustomTextField(
+                                    value = postalCode,
+                                    onValueChange = { postalCode = it },
+                                    label = "Código Postal",
+                                    icon = Icons.Default.MarkunreadMailbox,
+                                    keyboardType = KeyboardType.Number,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                    }
+                }
+                
+
+                item {
+                    SectionHeader(
+                        icon = Icons.Default.Payment,
+                        title = "Método de Pago"
+                    )
+                }
+                
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            PaymentMethodOption(
+                                icon = Icons.Default.CreditCard,
+                                title = "Tarjeta de Crédito",
+                                subtitle = "Visa, Mastercard",
+                                isSelected = selectedPaymentMethod == "Tarjeta de Crédito",
+                                onClick = { selectedPaymentMethod = "Tarjeta de Crédito" }
+                            )
+                            
+                            Divider()
+                            
+                            PaymentMethodOption(
+                                icon = Icons.Default.AccountBalance,
+                                title = "Transferencia Bancaria",
+                                subtitle = "Pago directo desde tu banco",
+                                isSelected = selectedPaymentMethod == "Transferencia Bancaria",
+                                onClick = { selectedPaymentMethod = "Transferencia Bancaria" }
+                            )
+                            
+                            Divider()
+                            
+                            PaymentMethodOption(
+                                icon = Icons.Default.Money,
+                                title = "Efectivo",
+                                subtitle = "Pago al momento de entrega",
+                                isSelected = selectedPaymentMethod == "Efectivo",
+                                onClick = { selectedPaymentMethod = "Efectivo" }
+                            )
+                        }
+                    }
+                }
+                
+
+                item {
+                    SectionHeader(
+                        icon = Icons.Default.ShoppingCart,
+                        title = "Resumen de Compra"
+                    )
+                }
+                
+                items(cartItems) { item ->
+                    CheckoutItemCard(item.manga.name, item.quantity, item.manga.salePrice ?: item.manga.price)
+                }
+                
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Subtotal:", color = Color.Gray)
+                                Text(PriceFormatter.formatPrice(subtotal))
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Envío:", color = Color.Gray)
+                                Text(PriceFormatter.formatPrice(envio))
+                            }
+                            Divider()
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
                                 Text(
-                                    text = PriceFormatter.formatPrice(item.price * item.quantity),
-                                    fontSize = 16.sp,
+                                    "Total:",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    PriceFormatter.formatPrice(total),
+                                    fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.Black
+                                    color = Color(0xFFFF9800)
                                 )
                             }
                         }
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFFF8F8F8)
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            "Subtotal:",
-                            fontSize = 14.sp,
-                            color = Color.Gray
-                        )
-                        Text(
-                            PriceFormatter.formatPrice(subtotal),
-                            fontSize = 14.sp,
-                            color = Color.Black,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                    
-                    Spacer(modifier = Modifier.height(8.dp))
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            "Impuestos y cargos:",
-                            fontSize = 14.sp,
-                            color = Color.Gray
-                        )
-                        Text(
-                            PriceFormatter.formatPrice(impuestos),
-                            fontSize = 14.sp,
-                            color = Color.Black,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                    
-                    Divider(
-                        modifier = Modifier.padding(vertical = 12.dp),
-                        color = Color.LightGray
-                    )
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            "Total a pagar:",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Black
-                        )
-                        Text(
-                            text = PriceFormatter.formatPrice(total),
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFFF9800)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Text(
-                "Elija un método de pago",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
             
-            Text(
-                "Seleccione el método de pago que más le convenga.",
-                fontSize = 14.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
+            // Botón de confirmar
             Button(
                 onClick = {
-                    selectedPaymentMethod = PaymentMethod.GOOGLE_PAY
-                    finalTotal = total
-                    isProcessing = true
-                    scope.launch {
-                        try {
-                            // Crear la orden
-                            val order = Order(
-                                userId = userId,
-                                total = total,
-                                status = "CONFIRMED"
-                            )
-                            val orderId = db.orderDao().insertOrder(order)
-                            
-                            // Crear los items de la orden
-                            cartItems.forEach { cartItem ->
-                                val orderItem = OrderItem(
-                                    orderId = orderId.toInt(),
-                                    productId = cartItem.id,
-                                    quantity = cartItem.quantity,
-                                    price = cartItem.salePrice ?: cartItem.price
-                                )
-                                db.orderDao().insertOrderItem(orderItem)
+                    if (!isProcessing) {
+                        // Validar campos
+                        if (fullName.isBlank() || phone.isBlank() || address.isBlank() || 
+                            city.isBlank() || postalCode.isBlank()) {
+                            scope.launch {
+                                snackbarHostState.showSnackbar("Por favor, completa todos los campos")
                             }
-                            
-                            // Limpiar el carrito
-                            db.cartDao().clearCart(userId = userId)
-                            isProcessing = false
-                            showSuccessDialog = true
-                        } catch (e: Exception) {
-                            isProcessing = false
+                            return@Button
                         }
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = Color.Black
-                ),
-                shape = RoundedCornerShape(28.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray),
-                enabled = !isProcessing
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.google_pay_logo),
-                        contentDescription = "Google Pay Logo",
-                        modifier = Modifier.height(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Google Pay",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.Black
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Divider(
-                    modifier = Modifier.weight(1f),
-                    color = Color.LightGray,
-                    thickness = 1.dp
-                )
-                Text(
-                    text = "O",
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-                Divider(
-                    modifier = Modifier.weight(1f),
-                    color = Color.LightGray,
-                    thickness = 1.dp
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                "Número de la tarjeta",
-                fontSize = 14.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            
-            OutlinedTextField(
-                value = cardNumber,
-                onValueChange = { 
-                    if (it.length <= 16) cardNumber = it.filter { char -> char.isDigit() }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("1234 5678 9012 3456") },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_credit_card_icon),
-                        contentDescription = null,
-                        tint = Color.Gray,
-                        modifier = Modifier.size(24.dp)
-                    )
-                },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedBorderColor = Color(0xFFFF9800)
-                )
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                "Nombre del titular",
-                fontSize = 14.sp,
-                color = Color.Gray,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            
-            OutlinedTextField(
-                value = cardHolder,
-                onValueChange = { cardHolder = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Juan Pérez") },
-                leadingIcon = {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_user_icon),
-                        contentDescription = null,
-                        tint = Color.Gray,
-                        modifier = Modifier.size(24.dp)
-                    )
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.LightGray,
-                    focusedBorderColor = Color(0xFFFF9800)
-                )
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        "Fecha de vencimiento",
-                        fontSize = 14.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    
-                    OutlinedTextField(
-                        value = expiryDate,
-                        onValueChange = { 
-                            if (it.length <= 5) {
-                                expiryDate = it.filter { char -> char.isDigit() || char == '/' }
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("MM/AA") },
-                        leadingIcon ={
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_date_icon),
-                                contentDescription = null,
-                                tint = Color.Gray,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = Color.LightGray,
-                            focusedBorderColor = Color(0xFFFF9800)
-                        )
-                    )
-                }
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        "CVV",
-                        fontSize = 14.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                    
-                    OutlinedTextField(
-                        value = cvv,
-                        onValueChange = { 
-                            if (it.length <= 3) cvv = it.filter { char -> char.isDigit() }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("123") },
-                        leadingIcon = {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_padlock_icon),
-                                contentDescription = null,
-                                tint = Color.Gray,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedBorderColor = Color.LightGray,
-                            focusedBorderColor = Color(0xFFFF9800)
-                        )
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            val isFormValid = cardNumber.length == 16 && 
-                              cardHolder.isNotBlank() && 
-                              expiryDate.length >= 4 && 
-                              cvv.length == 3
-
-            Button(
-                onClick = {
-                    if (isFormValid) {
-                        selectedPaymentMethod = PaymentMethod.CREDIT_CARD
-                        finalTotal = total
+                        
                         isProcessing = true
+                        val userId = UserSession.getUserId(context) ?: 1
                         scope.launch {
-                            try {
-                                // Crear la orden
-                                val order = Order(
-                                    userId = userId,
-                                    total = total,
-                                    status = "CONFIRMED"
-                                )
-                                val orderId = db.orderDao().insertOrder(order)
-                                
-                                // Crear los items de la orden
-                                cartItems.forEach { cartItem ->
-                                    val orderItem = OrderItem(
-                                        orderId = orderId.toInt(),
-                                        productId = cartItem.id,
-                                        quantity = cartItem.quantity,
-                                        price = cartItem.salePrice ?: cartItem.price
-                                    )
-                                    db.orderDao().insertOrderItem(orderItem)
-                                }
-                                
-                                // Limpiar el carrito
-                                db.cartDao().clearCart(userId = userId)
-                                isProcessing = false
-                                showSuccessDialog = true
-                            } catch (e: Exception) {
-                                isProcessing = false
-                            }
+                            ordersViewModel.createOrder(userId, cartItems, total)
                         }
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(16.dp)
                     .height(56.dp),
+                enabled = !isProcessing && cartItems.isNotEmpty(),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isFormValid) Color.Black else Color.Gray,
+                    containerColor = Color(0xFFFF9800),
                     contentColor = Color.White
                 ),
                 shape = RoundedCornerShape(28.dp),
-                enabled = isFormValid && !isProcessing
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
             ) {
                 if (isProcessing) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
+                        color = Color.White
                     )
                 } else {
-                    Text(
-                        "Pagar",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Confirmar Pedido",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
     }
+}
 
-    if (showSuccessDialog) {
-        AlertDialog(
-            onDismissRequest = { },
-            containerColor = Color.White,
-            title = {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth()
+@Composable
+fun SectionHeader(icon: ImageVector, title: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color(0xFFFF9800),
+            modifier = Modifier.size(24.dp)
+        )
+        Text(
+            title,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    keyboardType: KeyboardType = KeyboardType.Text
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        leadingIcon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = Color(0xFFFF9800)
+            )
+        },
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color(0xFFFF9800),
+            unfocusedBorderColor = Color(0xFFE0E0E0),
+            focusedLabelColor = Color(0xFFFF9800)
+        ),
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        singleLine = true
+    )
+}
+
+@Composable
+fun PaymentMethodOption(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(
+            selected = isSelected,
+            onClick = onClick,
+            colors = RadioButtonDefaults.colors(
+                selectedColor = Color(0xFFFF9800),
+                unselectedColor = Color.Gray
+            )
+        )
+        
+        Spacer(modifier = Modifier.width(12.dp))
+        
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (isSelected) Color(0xFFFF9800) else Color.Gray,
+            modifier = Modifier.size(28.dp)
+        )
+        
+        Spacer(modifier = Modifier.width(12.dp))
+        
+        Column {
+            Text(
+                title,
+                fontSize = 16.sp,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                color = if (isSelected) Color.Black else Color.Gray
+            )
+            Text(
+                subtitle,
+                fontSize = 12.sp,
+                color = Color.Gray
+            )
+        }
+    }
+}
+
+@Composable
+fun CheckoutItemCard(name: String, quantity: Int, price: Int) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(Color(0xFFFFF3E0), RoundedCornerShape(8.dp)),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Éxito",
-                        modifier = Modifier.size(64.dp),
-                        tint = Color(0xFF4CAF50)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        "¡Pago exitoso!",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp,
-                        color = Color.Black,
-                        textAlign = TextAlign.Center
-                    )
-                }
-            },
-            text = {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        if (selectedPaymentMethod == PaymentMethod.GOOGLE_PAY) {
-                            "Tu pago con Google Pay ha sido procesado correctamente."
-                        } else {
-                            "Tu pago con tarjeta de crédito ha sido procesado correctamente."
-                        },
-                        fontSize = 16.sp,
-                        color = Color.Gray,
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "Total pagado: ${PriceFormatter.formatPrice(finalTotal)}",
-                        fontSize = 18.sp,
+                        "${quantity}x",
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFFF9800)
                     )
                 }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showSuccessDialog = false
-                        onNavigateToCart()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFF9800),
-                        contentColor = Color.Black
-                    ),
-                    shape = RoundedCornerShape(25.dp)
-                ) {
-                    Text(
-                        "Continuar comprando",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                
+                Text(
+                    name,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 2
+                )
             }
-        )
+            
+            Text(
+                PriceFormatter.formatPrice(price * quantity),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFFF9800)
+            )
+        }
     }
 }

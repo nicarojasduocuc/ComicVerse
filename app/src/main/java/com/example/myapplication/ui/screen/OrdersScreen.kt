@@ -25,7 +25,9 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OrdersScreen() {
+fun OrdersScreen(
+    onNavigateBack: () -> Unit = {}
+) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val ordersViewModel: OrdersViewModel = viewModel()
     val ordersState by ordersViewModel.orders.collectAsState()
@@ -62,6 +64,14 @@ fun OrdersScreen() {
                         Text(
                             "Mis Pedidos",
                             fontWeight = FontWeight.Bold
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Volver"
                         )
                     }
                 },

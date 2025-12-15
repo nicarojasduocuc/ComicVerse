@@ -228,7 +228,14 @@ fun AppNavigation() {
                 }
 
                 composable(Screen.Orders.route) {
-                    OrdersScreen()
+                    OrdersScreen(
+                        onNavigateBack = {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Home.route) { inclusive = false }
+                                launchSingleTop = true
+                            }
+                        }
+                    )
                 }
                 
                 composable(Screen.Admin.route) {

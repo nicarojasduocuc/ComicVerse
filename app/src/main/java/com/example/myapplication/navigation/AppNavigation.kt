@@ -36,7 +36,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppNavigation() {
+fun AppNavigation(deepLinkRoute: String? = null) {
     val navController = rememberNavController()
     val context = LocalContext.current
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -44,6 +44,19 @@ fun AppNavigation() {
     
     // ViewModel compartido del carrito
     val cartViewModel: CartViewModel = viewModel()
+    
+    // Manejar Deep Link para redirigir a Orders
+    LaunchedEffect(deepLinkRoute) {
+        if (deepLinkRoute == "orders") {
+            navController.navigate(Screen.Orders.route) {
+                popUpTo(navController.graph.startDestinationId) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+    }
 
     val screensWithBottomBar = listOf(
         Screen.Home.route,

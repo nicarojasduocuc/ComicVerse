@@ -1,5 +1,7 @@
 package com.example.myapplication.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,6 +32,9 @@ import com.example.myapplication.utils.PriceFormatter
 import com.example.myapplication.viewmodel.CartViewModel
 import com.example.myapplication.viewmodel.OrdersViewModel
 import com.example.myapplication.utils.UserSession
+import com.example.myapplication.data.models.PaymentRequest
+import com.example.myapplication.data.models.CartItemForPayment
+import com.example.myapplication.data.network.RailwayApiService
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 
@@ -198,10 +203,10 @@ fun CheckoutScreen(
                         ) {
                             PaymentMethodOption(
                                 icon = Icons.Default.CreditCard,
-                                title = "Tarjeta de Crédito",
-                                subtitle = "Visa, Mastercard",
-                                isSelected = selectedPaymentMethod == "Tarjeta de Crédito",
-                                onClick = { selectedPaymentMethod = "Tarjeta de Crédito" }
+                                title = "Mercado Pago",
+                                subtitle = "Tarjetas, efectivo y más",
+                                isSelected = selectedPaymentMethod == "Mercado Pago",
+                                onClick = { selectedPaymentMethod = "Mercado Pago" }
                             )
                             
                             Divider()
@@ -300,9 +305,61 @@ fun CheckoutScreen(
                         }
                         
                         isProcessing = true
-                        val userId = UserSession.getUserId(context) ?: 1
-                        scope.launch {
-                            ordersViewModel.createOrder(userId, cartItems)
+                        
+                        // Si el método de pago es Mercado Pago, redirigir al checkout
+                        if (selectedPaymentMethod == "Mercado Pago") {
+                            scope.launch {
+                                try {
+                                    // Obtener el userId de la sesión
+                                    val userId = UserSession.getUserId(context)
+                                    
+                                    // Crear lista de items para el pago
+                                    val paymentItems = cartItems.map { cartItem ->
+                                        CartItemForPayment(
+                                            manga_id = cartItem.manga.id ?: "",
+                                            quantity = cartItem.quantity
+                                        )
+                                    }
+                                    
+                                    // Crear el request de pago
+                                    val paymentRequest = PaymentRequest(
+                                        title = "Compra en ComicVerse",
+                                        description = "Compra de ${cartItems.size} productos",
+                                        price = total.toString(),
+                                        quantity = 1,
+                                        currencyId = "CLP",
+                                        externalReference = "ORDER-${System.currentTimeMillis()}",
+                                        payerEmail = UserSession.getUserEmail(context),
+                                        userId = userId,
+                                        items = paymentItems
+                                    )
+                                    
+                                    // Llamar a la API para crear la preferencia de pago
+                                    val paymentResponse = RailwayApiService.createPayment(paymentRequest)
+                                    
+                                    // Abrir el navegador con el link de Mercado Pago
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(paymentResponse.initPoint))
+                                    context.startActivity(intent)
+                                    
+                                    isProcessing = false
+                                    
+                                    // Opcional: Crear la orden después de que se confirme el pago
+                                    // Por ahora, limpiar el carrito
+                                    snackbarHostState.showSnackbar("Redirigiendo a Mercado Pago...")
+                                } catch (e: Exception) {
+                                    isProcessing = false
+                                    snackbarHostState.showSnackbar(
+                                        "Error al procesar el pago: ${e.message}"
+                                    )
+                                    android.util.Log.e("CheckoutScreen", "Error creating payment", e)
+                                }
+                            }
+                        } else {
+                            // Otros métodos de pago: crear orden directamente
+                            val userId = UserSession.getUserId(context) ?: 1
+                            scope.launch {
+                                ordersViewModel.createOrder(userId, cartItems)
+                            }
                         }
                     }
                 },

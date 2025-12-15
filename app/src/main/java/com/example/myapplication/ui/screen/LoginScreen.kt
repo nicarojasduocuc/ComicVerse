@@ -50,6 +50,8 @@ fun LoginScreen(
                 if (user != null) {
                     // Guardar sesión
                     com.example.myapplication.utils.UserSession.saveUserId(context, user.id)
+                    // Guardar email para Mercado Pago
+                    com.example.myapplication.utils.UserSession.saveUserEmail(context, user.email)
                     isLoading = false
                     onNavigateToHome()
                 }

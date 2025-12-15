@@ -56,6 +56,11 @@ fun RegisterScreen(
                         context, 
                         user.id
                     )
+                    // Guardar email para Mercado Pago
+                    com.example.myapplication.utils.UserSession.saveUserEmail(
+                        context,
+                        user.email
+                    )
                     snackbarHostState.showSnackbar("¡Bienvenido!")
                     onRegisterSuccess()
                 }

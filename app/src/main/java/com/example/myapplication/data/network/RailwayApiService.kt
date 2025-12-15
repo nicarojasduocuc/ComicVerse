@@ -131,4 +131,45 @@ object RailwayApiService {
             setBody(mapOf("status" to status))
         }.body()
     }
+    
+    // ==================== MERCADO PAGO ====================
+    
+    /**
+     * Crea una preferencia de pago en Mercado Pago
+     */
+    suspend fun createPayment(request: PaymentRequest): PaymentResponse {
+        return try {
+            val response = client.post("/api/payments/create") {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }
+            android.util.Log.d("RailwayApiService", "Payment response status: ${response.status}")
+            
+            if (response.status.value in 200..299) {
+                response.body<PaymentResponse>()
+            } else {
+                val errorBody = response.body<String>()
+                android.util.Log.e("RailwayApiService", "Payment failed: $errorBody")
+                throw Exception("Payment creation failed: $errorBody")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("RailwayApiService", "Payment error: ${e.message}", e)
+            throw e
+        }
+    }
+    
+    /**
+     * Obtiene información de un pago por su ID
+     */
+    suspend fun getPaymentInfo(paymentId: String): PaymentInfo {
+        return client.get("/api/payments/$paymentId").body()
+    }
+    
+    /**
+     * Verifica el estado de un pago
+     */
+    suspend fun verifyPaymentStatus(paymentId: String): String {
+        val paymentInfo = getPaymentInfo(paymentId)
+        return paymentInfo.status
+    }
 }

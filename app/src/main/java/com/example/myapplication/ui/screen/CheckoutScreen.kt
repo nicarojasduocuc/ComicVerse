@@ -43,7 +43,8 @@ import kotlinx.coroutines.launch
 fun CheckoutScreen(
     cartViewModel: CartViewModel,
     onNavigateBack: () -> Unit = {},
-    onNavigateToOrders: () -> Unit = {}
+    onNavigateToOrders: () -> Unit = {},
+    onNavigateToHome: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val ordersViewModel: OrdersViewModel = viewModel()
@@ -344,15 +345,15 @@ fun CheckoutScreen(
                                     // Llamar a la API para crear la preferencia de pago
                                     val paymentResponse = RailwayApiService.createPayment(paymentRequest)
                                     
-                                    // Limpiar el carrito ANTES de abrir Mercado Pago
-                                    cartViewModel.clearCart()
-                                    
-                                    // Navegar a Home para que al volver no esté en Checkout
-                                    onNavigateBack()
-                                    
-                                    // Abrir el navegador con el link de Mercado Pago
+                                    // Abrir el navegador INMEDIATAMENTE
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(paymentResponse.initPoint))
                                     context.startActivity(intent)
+                                    
+                                    // Después navegar a Home (no al carrito para no mostrar carrito vacío)
+                                    onNavigateToHome()
+                                    
+                                    // Limpiar el carrito después de navegar
+                                    cartViewModel.clearCart()
                                     
                                     isProcessing = false
                                 } catch (e: Exception) {

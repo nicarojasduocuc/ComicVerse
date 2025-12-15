@@ -158,6 +158,12 @@ fun AppNavigation() {
                                 popUpTo(Screen.Checkout.route) { inclusive = true }
                                 launchSingleTop = true
                             }
+                        },
+                        onNavigateToHome = {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Home.route) { inclusive = false }
+                                launchSingleTop = true
+                            }
                         }
                     )
                 }

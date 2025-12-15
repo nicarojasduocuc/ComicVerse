@@ -36,7 +36,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppNavigation(deepLinkRoute: String? = null) {
+fun AppNavigation() {
     val navController = rememberNavController()
     val context = LocalContext.current
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -45,16 +45,27 @@ fun AppNavigation(deepLinkRoute: String? = null) {
     // ViewModel compartido del carrito
     val cartViewModel: CartViewModel = viewModel()
     
-    // Manejar Deep Link para redirigir a Orders
-    LaunchedEffect(deepLinkRoute) {
-        if (deepLinkRoute == "orders") {
+    // Estado para detectar cuando se actualiza la necesidad de navegar
+    var checkNavigation by remember { mutableStateOf(0) }
+    
+    // Verificar continuamente si necesita navegar a Orders
+    LaunchedEffect(currentDestination, checkNavigation) {
+        if (UserSession.needsNavigateToOrders(context)) {
+            android.util.Log.d("AppNavigation", "✅ Navegando a Orders después del pago")
+            
+            // Navegar a Orders limpiando todo el back stack
             navController.navigate(Screen.Orders.route) {
-                popUpTo(navController.graph.startDestinationId) {
-                    saveState = true
-                }
+                popUpTo(0) { inclusive = true }
                 launchSingleTop = true
-                restoreState = true
             }
+        }
+    }
+    
+    // Recheck periódicamente
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(500)
+            checkNavigation++
         }
     }
 

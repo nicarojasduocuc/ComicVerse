@@ -172,4 +172,19 @@ object RailwayApiService {
         val paymentInfo = getPaymentInfo(paymentId)
         return paymentInfo.status
     }
+    
+    /**
+     * Procesa la orden después de un pago exitoso
+     */
+    suspend fun processOrder(externalReference: String): Boolean {
+        return try {
+            val response = client.post("/api/payments/process-order") {
+                parameter("externalReference", externalReference)
+            }
+            response.status.value in 200..299
+        } catch (e: Exception) {
+            android.util.Log.e("RailwayApiService", "Process order error: ${e.message}", e)
+            false
+        }
+    }
 }

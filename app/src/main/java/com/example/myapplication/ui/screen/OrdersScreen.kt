@@ -29,9 +29,19 @@ fun OrdersScreen() {
     val context = androidx.compose.ui.platform.LocalContext.current
     val ordersViewModel: OrdersViewModel = viewModel()
     val ordersState by ordersViewModel.orders.collectAsState()
+    val scope = rememberCoroutineScope()
     
     LaunchedEffect(Unit) {
         val userId = UserSession.getUserId(context) ?: 1
+        
+        // Si viene de un pago, esperar un poco para que el backend termine de procesar
+        if (UserSession.getPendingOrderReference(context) != null) {
+            android.util.Log.d("OrdersScreen", "Esperando que el backend procese la orden...")
+            kotlinx.coroutines.delay(2000)
+            UserSession.clearPendingOrderReference(context)
+        }
+        
+        // Cargar las órdenes
         ordersViewModel.getUserOrders(userId)
     }
 

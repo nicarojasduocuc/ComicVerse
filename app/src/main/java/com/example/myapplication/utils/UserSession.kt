@@ -8,6 +8,7 @@ object UserSession {
     private const val KEY_USER_ID = "user_id"
     private const val KEY_USER_EMAIL = "user_email"
     private const val KEY_IS_LOGGED_IN = "is_logged_in"
+    private const val KEY_PENDING_ORDER_REF = "pending_order_reference"
 
     private fun getPreferences(context: Context): SharedPreferences {
         return context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
@@ -47,5 +48,50 @@ object UserSession {
             putBoolean(KEY_IS_LOGGED_IN, false)
             apply()
         }
+    }
+    
+    fun savePendingOrderReference(context: Context, reference: String) {
+        getPreferences(context).edit().apply {
+            putString(KEY_PENDING_ORDER_REF, reference)
+            apply()
+        }
+    }
+    
+    fun getPendingOrderReference(context: Context): String? {
+        return getPreferences(context).getString(KEY_PENDING_ORDER_REF, null)
+    }
+    
+    fun clearPendingOrderReference(context: Context) {
+        getPreferences(context).edit().apply {
+            remove(KEY_PENDING_ORDER_REF)
+            apply()
+        }
+    }
+    
+    fun setNeedsNavigateToOrders(context: Context, needs: Boolean) {
+        getPreferences(context).edit().apply {
+            putBoolean("needs_navigate_to_orders", needs)
+            apply()
+        }
+    }
+    
+    fun needsNavigateToOrders(context: Context): Boolean {
+        val needs = getPreferences(context).getBoolean("needs_navigate_to_orders", false)
+        if (needs) {
+            // Limpiar el flag después de leerlo
+            setNeedsNavigateToOrders(context, false)
+        }
+        return needs
+    }
+    
+    fun setIsProcessingPayment(context: Context, isProcessing: Boolean) {
+        getPreferences(context).edit().apply {
+            putBoolean("is_processing_payment", isProcessing)
+            apply()
+        }
+    }
+    
+    fun isProcessingPayment(context: Context): Boolean {
+        return getPreferences(context).getBoolean("is_processing_payment", false)
     }
 }

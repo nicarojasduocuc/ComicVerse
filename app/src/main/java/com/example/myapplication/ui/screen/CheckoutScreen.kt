@@ -322,30 +322,39 @@ fun CheckoutScreen(
                                     }
                                     
                                     // Crear el request de pago
+                                    val externalRef = "ORDER-${System.currentTimeMillis()}"
                                     val paymentRequest = PaymentRequest(
                                         title = "Compra en ComicVerse",
                                         description = "Compra de ${cartItems.size} productos",
                                         price = total.toString(),
                                         quantity = 1,
                                         currencyId = "CLP",
-                                        externalReference = "ORDER-${System.currentTimeMillis()}",
+                                        externalReference = externalRef,
                                         payerEmail = UserSession.getUserEmail(context),
                                         userId = userId,
                                         items = paymentItems
                                     )
                                     
+                                    // Guardar la referencia para procesar después
+                                    UserSession.savePendingOrderReference(context, externalRef)
+                                    
+                                    // Marcar que se está haciendo un pago
+                                    UserSession.setIsProcessingPayment(context, true)
+                                    
                                     // Llamar a la API para crear la preferencia de pago
                                     val paymentResponse = RailwayApiService.createPayment(paymentRequest)
+                                    
+                                    // Limpiar el carrito ANTES de abrir Mercado Pago
+                                    cartViewModel.clearCart()
+                                    
+                                    // Navegar a Home para que al volver no esté en Checkout
+                                    onNavigateBack()
                                     
                                     // Abrir el navegador con el link de Mercado Pago
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(paymentResponse.initPoint))
                                     context.startActivity(intent)
                                     
                                     isProcessing = false
-                                    
-                                    // Opcional: Crear la orden después de que se confirme el pago
-                                    // Por ahora, limpiar el carrito
-                                    snackbarHostState.showSnackbar("Redirigiendo a Mercado Pago...")
                                 } catch (e: Exception) {
                                     isProcessing = false
                                     snackbarHostState.showSnackbar(
